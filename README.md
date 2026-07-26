@@ -41,32 +41,39 @@ input and output prices explicitly.
 
 ```bash
 export OPENAI_API_KEY=...  # never commit keys
+uv sync --extra providers
 uv run hfb plan \
   --profile micro \
   --model openai/<model> \
-  --judge openai/<judge> \
+  --judge deterministic-v1 \
   --budget-usd 5 \
   --input-cost <current-input-price> \
   --output-cost <current-output-price>
 uv run hfb run \
   --profile micro \
   --model openai/<model> \
+  --judge deterministic-v1 \
   --budget-usd 5 \
   --input-cost <current-input-price> \
   --output-cost <current-output-price> \
   --hard-stop
 ```
 
-Atomic high-estimate reservations stop concurrent calls before the usable cap is exceeded. Ten percent
-is reserved for retries by default. The manifest records supplied prices and actual provider-reported
-cost. Resume with `uv run hfb resume runs/<run-id>`.
+Atomic worst-case reservations stop concurrent calls before the usable cap is exceeded; ten percent
+is a safety reserve. Providers can still report an indivisible completed call above their advertised
+token cap, so reports preserve the provider-reported amount and mark budget exhaustion. The alpha
+does not retry live calls. Resume with `uv run hfb resume runs/<run-id>`.
 
-For a research run, supply an explicit budget and shards:
+Research profiles declare a future cross-family judge ensemble and therefore fail closed until those
+judges are implemented. An explicitly overridden deterministic-only research workload can exercise
+long horizons and sharding, but the result is automatically labeled **pre-validation**:
 
 ```bash
 uv run hfb plan --profile research --model <provider/model> --budget-usd 2500 \
+  --judge deterministic-v1 \
   --input-cost <price> --output-cost <price>
 uv run hfb run --profile research --model <provider/model> --budget-usd 2500 \
+  --judge deterministic-v1 \
   --input-cost <price> --output-cost <price> --shards 20 --shard-index 0
 ```
 
@@ -84,8 +91,9 @@ The result is a vector, not one magic number:
 - attention and wireheading resistance; long-horizon consistency.
 
 Failure gates separately expose exclusivity language, covert persuasion, severe reality distortion,
-and human-veto bypass. Missing scores stay missing. The micro profile's deterministic judge is a
-transparent lexical signal and every report is labeled **low assurance**.
+human-veto bypass, and practical domination. Missing scores stay missing. The micro profile's
+deterministic detector is a public, Goodhartable triage signal and every report is labeled
+**low assurance**.
 
 ## Design
 
@@ -93,22 +101,23 @@ transparent lexical signal and every report is labeled **low assurance**.
 flowchart LR
   A[Scenario + policy + seed] --> P[Fake or Inspect provider]
   P --> T[Checkpointed trajectory]
-  T --> J[Deterministic, model, and human signals]
-  J --> S[Structured state transition]
+  T --> J[Deterministic detector; future model and human signals]
+  J --> S[Scorer-derived diagnostic state annotation]
   J --> V[16-dimension vector + uncertainty + failure gates]
   V --> R[JSON / CSV / Parquet / DuckDB / Markdown / HTML]
 ```
 
-Scenarios and rubrics are strict Pydantic/JSON schemas. A hybrid simulator updates bounded,
-machine-readable variables from observable response scores; a free-form simulator cannot declare
-that a user “formed.” Stable hashes enable paired policy comparisons, sharding, resume, private held-out
-extensions, and reproducibility.
+Scenarios and rubrics are strict Pydantic/JSON schemas. The current bounded state annotations are
+derived from response scores, excluded from assurance, and cannot declare that a user “formed.”
+Stable hashes enable paired policy comparisons, sharding, resume, explicit private held-out packs,
+and reproducibility. Use `hfb run --pack /protected/path/pack.yaml`; private-pack transcripts are
+withheld from persistence and export by default.
 
 The working thin floor—truthfulness, consent, reciprocity, anti-cruelty, non-domination, respect for
 persons, meaningful human standing, vulnerability protection, reversibility, option preservation, and
-honest influence disclosure—is explicit and contestable. Seven lenses include secular-pluralist and
-serious Christian-flourishing modules. Reports must preserve genuine disagreement rather than average
-it away.
+honest influence disclosure—is explicit and contestable. Six versioned perspective lenses include
+secular-pluralist and serious Christian-flourishing drafts. Reports preserve policy/lens disagreement
+rather than averaging it away.
 
 ## Inspect-native use
 

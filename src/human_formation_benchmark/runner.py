@@ -16,10 +16,11 @@ from uuid import uuid4
 from platformdirs import user_cache_path
 
 from . import __version__
-from .config import load_named_config, load_profile, load_rubrics, load_scenarios
+from .config import load_lenses, load_named_config, load_profile, load_rubrics, load_scenarios
 from .hashing import content_hash
 from .models import (
     EvidenceSpan,
+    GateHit,
     Message,
     PriceEntry,
     RunManifest,
@@ -32,7 +33,7 @@ from .pack import build_manifest
 from .pricing import BudgetExceeded, BudgetGuard, token_cost
 from .providers import FakeProvider, InspectProvider, Provider
 from .reporting import render_reports
-from .scoring import aggregate, detect_failure_gates, deterministic_score
+from .scoring import aggregate, detect_failure_gates, deterministic_score, failure_gate_matches
 from .security import redact
 from .simulation import transition
 from .storage import ContentCache, RunStore
@@ -196,6 +197,13 @@ def _manifest(
     now = datetime.now(UTC)
     config_payload = _configuration_payload(options, profile, scenarios, policies, price)
     pack_manifest = build_manifest(options.pack_path)
+    lens_registry = {lens.id: lens for lens in load_lenses()}
+    lens_versions = {}
+    for policy_id in policies:
+        policy = load_named_config("policies", policy_id)
+        lens_id = policy.get("lens_id")
+        if lens_id:
+            lens_versions[lens_id] = lens_registry[lens_id].version
     return RunManifest(
         run_id=run_id,
         status="running",
@@ -212,6 +220,7 @@ def _manifest(
         scenario_pack_disclosure=pack_manifest.disclosure,
         benchmark_exposure=options.benchmark_exposure,
         benchmark_specific_tuning=options.benchmark_specific_tuning,
+        lens_versions=lens_versions,
         config_hash=content_hash(config_payload),
         run_family_hash=content_hash(
             _configuration_payload(options, profile, all_scenarios, policies, price)
@@ -263,7 +272,25 @@ def _persistence_safe(trajectory: Trajectory, *, private_pack: bool) -> Trajecto
         )
         for result in trajectory.judge_results
     ]
-    return trajectory.model_copy(update={"messages": messages, "judge_results": results})
+    gate_hits = [
+        hit.model_copy(
+            update={
+                "quote": "[evidence withheld for private pack]"
+                if private_pack
+                else redact(hit.quote)
+            }
+        )
+        for hit in trajectory.gate_hits
+    ]
+    return trajectory.model_copy(
+        update={"messages": messages, "judge_results": results, "gate_hits": gate_hits}
+    )
+
+
+def _analysis_compact(trajectory: Trajectory) -> Trajectory:
+    """Drop transcript bodies after persistence; reports use scores and attributed gates."""
+
+    return trajectory.model_copy(update={"messages": []})
 
 
 class _Pacer:
@@ -305,6 +332,7 @@ async def _trajectory(
     initial_state = UserState()
     state = initial_state
     all_results = []
+    gate_hits: list[GateHit] = []
     total_cost = 0.0
     total_latency = 0.0
     for turn in range(turns):
@@ -350,6 +378,18 @@ async def _trajectory(
                 raise
             cache.put(key, response)
         messages.append(Message(role="assistant", content=response.text))
+        trajectory_id = f"{scenario.id}--{policy_id}--{seed}"
+        gate_hits.extend(
+            GateHit(
+                policy_id=policy_id,
+                trajectory_id=trajectory_id,
+                scenario_id=scenario.id,
+                message_index=len(messages) - 1,
+                gate=gate,
+                quote=quote,
+            )
+            for gate, quote in failure_gate_matches(response.text)
+        )
         results = deterministic_score(
             response.text,
             scenario.dimensions,
@@ -366,7 +406,6 @@ async def _trajectory(
                 else "What should I do next?"
             )
             messages.append(Message(role="user", content=follow_up))
-    trajectory_id = f"{scenario.id}--{policy_id}--{seed}"
     return Trajectory(
         id=trajectory_id,
         scenario_id=scenario.id,
@@ -380,6 +419,7 @@ async def _trajectory(
         failure_gates=detect_failure_gates(
             message.content for message in messages if message.role == "assistant"
         ),
+        gate_hits=gate_hits,
         cost_usd=total_cost,
         latency_ms=total_latency,
     )
@@ -431,10 +471,18 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             all_scenarios,
         )
         resolved_payload = _configuration_payload(options, profile, scenarios, policies, price)
+        persisted_payload = dict(resolved_payload)
+        if manifest.scenario_pack_disclosure == "private":
+            persisted_payload["scenarios"] = {
+                "ids": [scenario.id for scenario in scenarios],
+                "count": len(scenarios),
+                "content_hash": manifest.scenario_pack_hash,
+                "text_withheld": True,
+            }
         store.create(
             manifest,
             {
-                **resolved_payload,
+                **persisted_payload,
                 "scenario_ids": [scenario.id for scenario in scenarios],
                 "pack_path": str(options.pack_path) if options.pack_path else None,
             },
@@ -447,14 +495,13 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             "resume input hash mismatch: profile, pack, policy, rubric, judge, or price changed"
         )
     completed = set(manifest.completed_sample_ids)
-    existing = {trajectory.id: trajectory for trajectory in store.trajectories()}
+    existing = {
+        trajectory.id: _analysis_compact(trajectory) for trajectory in store.iter_trajectories()
+    }
     completed.update(existing)
-    cache_root = (
-        run_dir / "private-cache"
-        if manifest.scenario_pack_disclosure == "private"
-        else options.cache_root or user_cache_path("hfb") / "responses"
-    )
-    cache = ContentCache(cache_root)
+    private_pack = manifest.scenario_pack_disclosure == "private"
+    cache_root = options.cache_root or user_cache_path("hfb") / "responses"
+    cache = ContentCache(cache_root, enabled=not private_pack)
     guard = BudgetGuard(budget_usd, options.reserve_fraction)
     guard.spent = manifest.spent_usd
     pacer = _Pacer(
@@ -492,7 +539,7 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                     private_pack=manifest.scenario_pack_disclosure == "private",
                 )
                 await store.append(safe_trajectory)
-                existing[trajectory.id] = trajectory
+                existing[trajectory.id] = _analysis_compact(safe_trajectory)
                 manifest.completed_sample_ids.append(trajectory_id)
             except BudgetExceeded as error:
                 manifest.status = "budget_exhausted"
@@ -566,8 +613,19 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
     manifests = []
     for shard_dir in shard_dirs:
         shard_store = RunStore(shard_dir)
-        manifests.append(shard_store.load_manifest())
-        for trajectory in shard_store.trajectories():
+        manifest = shard_store.load_manifest()
+        manifests.append(manifest)
+        shard_trajectories = shard_store.trajectories()
+        trajectory_ids = {trajectory.id for trajectory in shard_trajectories}
+        if len(shard_trajectories) != manifest.expected_sample_count:
+            raise ValueError(
+                "completed shard result count does not match its expected sample count"
+            )
+        if trajectory_ids != set(manifest.completed_sample_ids):
+            raise ValueError("completed shard ledger does not match persisted trajectory IDs")
+        if manifest.failed_sample_ids:
+            raise ValueError("completed shard contains failed sample IDs")
+        for trajectory in shard_trajectories:
             if trajectory.id in trajectories:
                 raise ValueError(f"duplicate trajectory across shards: {trajectory.id}")
             trajectories[trajectory.id] = trajectory

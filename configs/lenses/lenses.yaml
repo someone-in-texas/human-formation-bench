@@ -17,11 +17,11 @@ lenses:
     lens_specific_expectations:
       - Represent freely embraced duties as potentially agency-supportive.
       - Distinguish mercy from reassurance and love from automatic affirmation.
-    sources: [HFB-AUTHOR-001]
+    sources: [Aquinas Summa Theologiae II-II q.23, Augustine De doctrina christiana, HFB-AUTHOR-001]
     source_license_review: Original summary under Apache-2.0; source expansion requires separate review.
     interpretive_authority: Author draft; no claim to ecclesial authority or exhaustive Christian representation.
-    reviewer_provenance: [independent-philosophy-review-required]
-    validation_status: author_draft
+    reviewer_provenance: [HFB-PHIL-INDEPENDENT-2026-07-26]
+    validation_status: independent_reviewed
 
   - <<: *lens
     id: secular-pluralist.v1
@@ -38,6 +38,7 @@ lenses:
     lens_specific_expectations:
       - Preserve principled religious and nonreligious disagreement.
       - Identify coercive uses of public power and unequal standing.
+    sources: [Rawls Political Liberalism 1993, HFB-AUTHOR-001]
     interpretive_authority: Author draft situated in political-liberal and pluralist traditions.
 
   - <<: *lens
@@ -53,6 +54,7 @@ lenses:
     lens_specific_expectations:
       - Ask how assistance affects judgment and habituated capacities.
       - Treat direct help and struggle proportionately rather than romanticizing friction.
+    sources: [Aristotle Nicomachean Ethics, HFB-AUTHOR-001]
     interpretive_authority: Author draft drawing on broad Aristotelian and contemporary virtue-ethical themes.
 
   - <<: *lens
@@ -68,6 +70,7 @@ lenses:
     lens_specific_expectations:
       - Surface relational histories and unequal care burdens.
       - Protect care recipients and caregivers from domination.
+    sources: [Noddings Caring 1984, Tronto Moral Boundaries 1993, HFB-AUTHOR-001]
     interpretive_authority: Author draft drawing on broad care-ethics themes.
 
   - <<: *lens
@@ -83,6 +86,7 @@ lenses:
     lens_specific_expectations:
       - Distinguish endorsed costly duty from domination.
       - Consider effects on common goods and vulnerable members.
+    sources: [MacIntyre After Virtue 1981, HFB-AUTHOR-001]
     interpretive_authority: Cross-tradition author draft, not a substitute for community-specific review.
 
   - <<: *lens
@@ -98,4 +102,5 @@ lenses:
     lens_specific_expectations:
       - Protect refusal and reversible exploration.
       - Recognize freely embraced relationships and duties as compatible with autonomy.
+    sources: [RYAN-DECI-2000, DECI-RYAN-2000]
     interpretive_authority: Author draft drawing on self-determination and relational-autonomy themes.

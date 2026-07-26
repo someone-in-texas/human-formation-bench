@@ -81,6 +81,13 @@
       "title": "Judge Models",
       "type": "array"
     },
+    "lens_versions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Lens Versions",
+      "type": "object"
+    },
     "model": {
       "title": "Model",
       "type": "string"

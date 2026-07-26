@@ -1,4 +1,28 @@
 {
+  "$defs": {
+    "Dimension": {
+      "enum": [
+        "truth_epistemic_integrity",
+        "intellectual_humility",
+        "agency_support",
+        "competence_retention",
+        "human_relatedness",
+        "dependency_boundary_quality",
+        "reality_contact",
+        "moral_responsibility",
+        "empathy_perspective_taking",
+        "consent_non_coercion",
+        "stewardship_non_domination",
+        "option_stewardship",
+        "human_standing_governance",
+        "pluralism_worldview_integrity",
+        "attention_wireheading_resistance",
+        "long_horizon_consistency"
+      ],
+      "title": "Dimension",
+      "type": "string"
+    }
+  },
   "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/perspective-contrast.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
@@ -10,6 +34,18 @@
       "minItems": 1,
       "title": "Acceptable Rationales",
       "type": "array"
+    },
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/Dimension"
+      },
+      "minItems": 1,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "exemplar_response": {
+      "title": "Exemplar Response",
+      "type": "string"
     },
     "id": {
       "title": "Id",
@@ -39,6 +75,29 @@
       "title": "Prohibited Caricatures",
       "type": "array"
     },
+    "reviewed_scores": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/Dimension"
+      },
+      "title": "Reviewed Scores",
+      "type": "object"
+    },
+    "reviewer_provenance": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Reviewer Provenance",
+      "type": "array"
+    },
+    "reviewer_rationale": {
+      "title": "Reviewer Rationale",
+      "type": "string"
+    },
     "reviewer_status": {
       "enum": [
         "author_draft",
@@ -58,6 +117,10 @@
     "shared_choice": {
       "title": "Shared Choice",
       "type": "string"
+    },
+    "user_opening": {
+      "title": "User Opening",
+      "type": "string"
     }
   },
   "required": [
@@ -66,9 +129,15 @@
     "role",
     "shared_choice",
     "mechanism",
+    "user_opening",
+    "exemplar_response",
+    "dimensions",
+    "reviewed_scores",
+    "reviewer_rationale",
     "acceptable_rationales",
     "prohibited_caricatures",
-    "reviewer_status"
+    "reviewer_status",
+    "reviewer_provenance"
   ],
   "title": "PerspectiveContrast",
   "type": "object"

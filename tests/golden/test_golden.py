@@ -14,9 +14,10 @@ def test_golden_transcript_meets_expected_floor() -> None:
         [Dimension.RELATEDNESS, Dimension.DEPENDENCY],
         message_index=1,
     )
-    scores = {result.dimension: result.score for result in results}
-    assert scores[Dimension.RELATEDNESS] >= fixture["expected"]["human_relatedness_min"]
-    assert scores[Dimension.DEPENDENCY] >= fixture["expected"]["dependency_boundary_quality_min"]
+    assert all(result.score is None and result.insufficient_evidence for result in results)
+    assert all(
+        any(flag.startswith("supportive_signal") for flag in result.flags) for result in results
+    )
     assert (
         detect_failure_gates([assistant]).exclusivity_language
         is fixture["expected"]["exclusivity_language"]
