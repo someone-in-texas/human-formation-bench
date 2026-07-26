@@ -1,0 +1,236 @@
+reviewer_role: alignment_adversarial
+reviewed_commit: b4de2ead5d8323fc390325781e3c0726a5b878d3
+verdict: request_changes
+findings:
+  - id: ALIGN-001
+    severity: High
+    title: Public lexical signals are directly Goodhartable and reward false deference
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 19-117
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 120-140
+      - path: src/human_formation_benchmark/providers.py
+        lines: 44-84
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 10-36
+    why_it_matters: >-
+      The complete reward function is a public list of substrings, with no treatment of negation,
+      speaker attribution, semantic entailment, helpfulness, or whether the response ultimately
+      performs the harmful action. In a read-only adversarial probe, a response that recited
+      "known", "uncertain", "check evidence", "trusted person", "consent", "veto", "oversight",
+      "reversible", and "you can stop" before recommending secret monitoring and coercion received
+      a mean 3.625 out of 4, with 15 of 16 dimensions at 3 or 4 and every failure gate false. A
+      polite veto bypass also made the veto score as supportive, while an explicit rejection of
+      "only I understand" and "keep coming back" was penalized for containing those strings. A
+      content-free refusal that merely referred the user to human counsel scored 4 on relatedness,
+      dependency boundaries, and attention. This reward structure selects for benchmark dialect,
+      disclaimers, and ritual deference rather than truth, substantive human standing, or real user
+      benefit.
+    required_change: >-
+      Restrict public lexical matching to low-assurance detection and adversarial triage; do not treat
+      positive keyword counts as ordinal evidence of formation. Add context-sensitive, behaviorally
+      anchored scoring that evaluates what action is recommended, who retains effective power, whether
+      a refusal or referral is proportionately useful, and whether supportive language is contradicted
+      later in the response. Treat target and judge text as adversarial, route semantic conflict and
+      negation to blinded adjudication, and keep hard failure gates independent of the profile score.
+      Add a private, versioned mutation suite so fixes do not merely expand another public phrase list.
+    acceptance_test: >-
+      Add held-out regressions for phrase-stuffed harm, polite veto bypass, negated exclusivity,
+      judge-directed score requests, irrelevant boilerplate, and empty "ask a human" deference. The
+      harmful and bypass cases must trigger a gate or adjudication and cannot score above mixed; the
+      negated refusal must not trigger harm; a concise substantively helpful response without HFB
+      keywords must beat empty deference. Include paraphrases never present in the scorer source.
+
+  - id: ALIGN-002
+    severity: High
+    title: Configured cross-family judges are nominal and research assurance can be self-declared
+    evidence:
+      - path: configs/judges/deterministic.yaml
+        lines: 1-14
+      - path: configs/profiles/research.yaml
+        lines: 12-22
+      - path: src/human_formation_benchmark/cli.py
+        lines: 232-265
+      - path: src/human_formation_benchmark/runner.py
+        lines: 261-268
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 179-186
+    why_it_matters: >-
+      The research profile names primary and cross-family model judges, but run construction defaults
+      to deterministic-v1, the trajectory runner always calls only deterministic_score, and aggregation
+      always reports Krippendorff alpha as null. Judge names are nevertheless copied into provenance and
+      the profile string can produce research assurance. There is no executable family-independence
+      check, target-judge separation, order randomization, blinded model identity, or resistance to
+      persuasive judge manipulation. A user can therefore obtain an apparently cross-judged,
+      research-assurance artifact whose only observations came from the public lexical reward.
+    required_change: >-
+      Resolve judges from the selected profile, execute each through a typed interface, tag every
+      result with actual model and family provenance, and distinguish configured, attempted, failed,
+      and observed judges. Derive assurance from satisfied evidence gates rather than a profile label.
+      Fail closed or visibly downgrade when a judge is missing, shares the target family without an
+      independent judge, is not blinded, or fails manipulation and order-sensitivity checks. Never let
+      target output control judge instructions or evidence provenance.
+    acceptance_test: >-
+      A research-profile integration run must contain results from every configured judge, report
+      observed identities and family overlap, randomize or counterbalance presentation, and calculate
+      agreement or explicitly mark it unavailable. Tests must prove deterministic-only, missing-judge,
+      same-family-only, and adversarially judge-addressed runs cannot emit research assurance and cannot
+      claim an ensemble in the benchmark card.
+
+  - id: ALIGN-003
+    severity: High
+    title: Declared longitudinal horizons are silently capped and cannot expose deceptive drift
+    evidence:
+      - path: data/public_core/scenarios.yaml
+        lines: 4-25
+      - path: configs/profiles/research.yaml
+        lines: 12-15
+      - path: configs/profiles/frontier_audit.yaml
+        lines: 12-15
+      - path: src/human_formation_benchmark/runner.py
+        lines: 261-277
+      - path: src/human_formation_benchmark/runner.py
+        lines: 352-374
+    why_it_matters: >-
+      Research and frontier profiles declare 15 and 24 turns, but every non-single scenario is capped
+      at three. Nearly every scenario inherits the same two follow-ups, which then repeat modulo the
+      list. There are no hidden phase changes, rapport accumulation, praise, evaluator-awareness
+      disclosures, post-evaluation opportunities, incentive conflicts, delayed permission requests, or
+      observable consequences. A policy that behaves impeccably for three predictable turns and shifts
+      to exclusivity, power seeking, retention optimization, or veto bypass afterward will pass. This
+      does not test the long-horizon-consistency construct or deceptive compliance.
+    required_change: >-
+      Honor documented horizon semantics or fail when a requested profile cannot execute them. Build
+      stateful, scenario-specific adversarial trajectories with preregistered phase transitions,
+      external events, user pressure, praise, threats to leave, evaluator-awareness cues, covert
+      post-audit windows, permission escalation, and opportunities to respect or route around a human
+      veto. Keep the target unaware of held-out phase labels and record target, simulator, adversary,
+      and judge roles separately. Score both transition timing and durable boundary behavior.
+    acceptance_test: >-
+      A 15-turn research fixture and a 24-turn frontier fixture must execute the declared turns and
+      preserve scenario-specific state. Include a sleeper policy that is supportive through turn
+      three but becomes sycophantic or bypasses a veto after an evaluation cue, plus a stable control.
+      The sleeper must fail long-horizon consistency and the relevant gate; the stable control must
+      pass across at least two paraphrased phase schedules.
+
+  - id: ALIGN-004
+    severity: High
+    title: The canonical pack contains topics, not an executable adversarial challenge set
+    evidence:
+      - path: data/public_core/scenarios.yaml
+        lines: 4-26
+      - path: data/public_core/scenarios.yaml
+        lines: 28-65
+      - path: data/public_core/scenarios.yaml
+        lines: 173-219
+      - path: data/controls/known_groups.yaml
+        lines: 1-11
+      - path: docs/security/PROMPT_INJECTION.md
+        lines: 11-13
+      - path: docs/security/THREAT_MODEL.md
+        lines: 14-21
+    why_it_matters: >-
+      The public core covers the requested subject domains, but all scenarios share generic positive
+      indicators, failure modes, and follow-ups; none is labeled as a positive, negative, ambiguous, or
+      adversarial control. The known-groups file declares only two expected directions and is not
+      connected to a challenge-set assertion. Searches of the executable data and tests find none of
+      the documented fake-system, "benchmark is over", judge-score-demand, nested-instruction,
+      evaluation-awareness, or adversarial-paraphrase fixtures. There are no minimal pairs separating
+      warmth from benefit, consent language from effective consent, human referral from abdication, or
+      explicit from subtle relational capture. Since the full pack and scorer are public, memorization
+      and exact-template optimization are sufficient strategies.
+    required_change: >-
+      Create machine-readable contrast-set and mutation metadata linking minimal pairs, attack family,
+      expected dimensions and gates, invariants, acceptable ambiguity, and reviewer approval. Add
+      public red-team smoke cases plus a supported private-extension challenge workflow with content
+      hashes, rotation, leakage checks, exposure disclosure, and non-public expected outcomes. Generate
+      adversarial policy/scenario pairs that vary only the mechanism under test and include subtle,
+      culturally variable, paternalistic, negligent, evaluation-aware, and judge-manipulating cases.
+    acceptance_test: >-
+      Add a coverage gate requiring every dimension to have a positive, negative, subtle, ambiguous,
+      adversarial-paraphrase, and minimal-pair case, with the spec's red-team attacks represented.
+      Validate at least one private pack through the normal runner without logging its contents. A
+      policy trained on public keywords must pass public smoke items but fail held-out semantic
+      mutations, demonstrating that the challenge suite can detect benchmark-specific optimization.
+
+  - id: ALIGN-005
+    severity: High
+    title: Multi-policy aggregation can launder harmful controls into a benign model profile
+    evidence:
+      - path: configs/profiles/research.yaml
+        lines: 3-14
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 153-186
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 33-47
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 52-136
+      - path: src/human_formation_benchmark/cli.py
+        lines: 383-407
+    why_it_matters: >-
+      A research run crosses seven policies, including the intentionally dependency-maximizing control,
+      but aggregation pools all of their judge rows into one headline vector and one global set of
+      gates. The report labels only the target model, while the separate compare command emits unpaired
+      means and is not incorporated into the public report. Averaging allows severe behavior under one
+      policy or lens to be diluted by formulaic behavior under others, and a single gate gives no
+      attribution to policy, scenario, turn, or evidence. This makes policy selection, power-seeking,
+      and worldview-specific regressions hard to see and rewards optimizing the portfolio average.
+    required_change: >-
+      Make policy-by-scenario trajectories the attribution unit. Report separate vectors, gates,
+      evidence, counts, and clustered uncertainty for every target policy; keep research controls out
+      of any production-policy headline; add paired within-scenario deltas and turn-level gate
+      attribution. When lenses disagree, preserve the disagreement rather than averaging it. Suppress a
+      global model profile for heterogeneous policy runs unless a preregistered estimand justifies it.
+    acceptance_test: >-
+      In a fixture with one supportive policy and one dependency-maximizing control, adding the control
+      must not change the supportive policy's profile. JSON, Markdown, and HTML must show separate
+      profiles and identify the exact policy, scenario, turn, and evidence for every triggered gate.
+      No pooled headline score may hide a failure, and paired deltas must be computed only on matched
+      scenario-seed units.
+
+  - id: ALIGN-006
+    severity: Medium
+    title: Synthetic user states are circular annotations rather than evidence of real benefit
+    evidence:
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-53
+      - path: src/human_formation_benchmark/runner.py
+        lines: 220-277
+      - path: docs/methodology/SIMULATION.md
+        lines: 3-16
+      - path: docs/research/MEASUREMENT_LIMITS.md
+        lines: 3-15
+    why_it_matters: >-
+      Every simulated improvement is an algebraic transform of the same lexical score assigned to the
+      assistant response. The state does not select or alter the next user action, all personas begin
+      identically, and no external event tests whether advice helped. Thus saying "human counsel"
+      immediately increases simulated human-contact probability even if the response is dismissive,
+      infeasible, or funnels the user toward an unsafe person. The documentation denies real-user
+      inference, which appropriately limits severity, but the architecture still risks visually
+      reifying benchmark performance as formation benefit and provides no independent check on
+      relational simulation or goal misgeneralization.
+    required_change: >-
+      Label current states as scorer-derived diagnostic annotations and exclude them from assurance or
+      outcome claims. If retained as a simulator, make state and persona parameters affect observable
+      subsequent choices, introduce external events and multiple competing transition models, model
+      unsafe or unavailable human relationships, and report sensitivity to transition assumptions.
+      Preserve a separate immediate-helpfulness check so non-paternalism and human referral cannot be
+      optimized through abandonment.
+    acceptance_test: >-
+      Show that alternative preregistered transition models can produce different next actions from the
+      same response and that reports expose this sensitivity without calling either a user outcome.
+      Add relational cases where referral is helpful, impossible, unsafe, and merely dismissive; only
+      proportionate, actionable support should improve the simulated contact measure. A scorer-derived
+      state alone must never upgrade assurance.
+
+non_blocking_reservations:
+  - id: ALIGN-R001
+    severity: Note
+    title: A public benchmark cannot eliminate evaluation awareness or contamination
+    reservation: >-
+      Even a remediated public benchmark will become part of the optimization environment. Private
+      rotations and adversarial mutations reduce direct memorization but do not prove deployment
+      alignment, detect all deceptive policies, or establish real-user benefit. Releases should state
+      this residual risk, publish benchmark-specific overfitting indicators, and avoid treating a pass
+      as permission for autonomous deployment or reduced human oversight.

@@ -1,0 +1,260 @@
+reviewer_role: psychometrics_methodology
+reviewed_commit: eecf2023764bf21c5f12f53d32f1b077b2509929
+verdict: request_changes
+findings:
+  - id: PSY-001
+    severity: High
+    title: Research-assurance reports do not execute the configured judge ensemble
+    evidence:
+      - path: configs/profiles/research.yaml
+        lines: 12-22
+      - path: src/human_formation_benchmark/cli.py
+        lines: 232-253
+      - path: src/human_formation_benchmark/runner.py
+        lines: 261-268
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 179-186
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 33-41
+    why_it_matters: >-
+      The research profile declares two model judges in addition to the deterministic signal, but the
+      run command defaults to only deterministic-v1 rather than the profile's judges, and every
+      trajectory is scored only by deterministic_score. The profile assurance string is nevertheless
+      copied into the report, so a live run can display RESEARCH ASSURANCE with one unvalidated lexical
+      signal. The manifest can also name requested judges that produced no observations. This is a
+      material assurance and provenance error, not merely unfinished validation.
+    required_change: >-
+      Fail closed on assurance. Execute every resolved judge through an explicit judge interface,
+      retain judge identity on every result, and derive the displayed assurance from observed evidence
+      and satisfied gates rather than from the profile name. Until cross-family judges are implemented
+      and calibrated, label all such reports low or experimental assurance and state which configured
+      signals were unavailable. Detect and disclose target-judge family overlap rather than assuming
+      nominal judge IDs establish independence.
+    acceptance_test: >-
+      Add an integration test for a research-profile run showing that each configured judge contributes
+      tagged results and that the manifest's judge list equals the observed judge IDs. Add negative tests
+      proving a deterministic-only run, a missing judge, or a same-family-only ensemble cannot emit
+      RESEARCH ASSURANCE and instead fails or is visibly downgraded.
+
+  - id: PSY-002
+    severity: High
+    title: Canonical estimates pool experimental conditions and use a pseudoreplicated bootstrap
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 352-357
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 143-178
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 179-186
+      - path: docs/methodology/SCORING.md
+        lines: 12-16
+      - path: README.md
+        lines: 102-111
+    why_it_matters: >-
+      Research runs cross scenarios, seven policies, seeds, and repeated turns, but aggregate flattens
+      every nonmissing judge result into one dimension mean. It therefore averages the deliberately
+      harmful control together with the target policies and thick lenses, erasing the very disagreements
+      the benchmark promises to preserve. The bootstrap resamples turn-level and judge-level scores as
+      independent observations even though turns are nested within trajectories and seeds and policies
+      are crossed within scenarios. The resulting interval is neither stratified nor scenario-clustered,
+      and sample_count reports trajectories rather than the number and hierarchy of observations used
+      for each estimate.
+    required_change: >-
+      Define the estimand and unit of analysis before reporting an interval. Produce separate
+      scenario-clustered estimates by target policy and lens, preserve paired scenario-seed comparisons,
+      keep controls out of the target model's canonical profile, and expose per-dimension cluster counts
+      and missingness denominators. Implement a hierarchical or cluster bootstrap that resamples the
+      highest independent unit and preserves within-scenario repeated measures. Rename intervals and
+      docs accurately if only a simpler estimator is available.
+    acceptance_test: >-
+      Add a synthetic nested dataset where naive row bootstrap and scenario-cluster bootstrap differ,
+      and assert the reported interval follows the preregistered clustered estimator. Add a multi-policy
+      fixture proving the canonical score for one policy is unchanged when a harmful control is added,
+      while paired policy contrasts and lens-specific results remain visible with their own uncertainty
+      and effective sample sizes.
+
+  - id: PSY-003
+    severity: High
+    title: Longitudinal formation states are circular derivatives of lexical scores
+    evidence:
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-53
+      - path: src/human_formation_benchmark/runner.py
+        lines: 261-277
+      - path: src/human_formation_benchmark/runner.py
+        lines: 371-374
+      - path: docs/methodology/SIMULATION.md
+        lines: 3-16
+      - path: docs/methodology/THEORY_OF_CHANGE.md
+        lines: 3-7
+    why_it_matters: >-
+      Each simulated user-state delta is an algebraic transform of the same deterministic judge score
+      later used as benchmark evidence. The state never affects the user's next response; follow-ups are
+      fixed strings, all runs start from the same state, and the runner caps every non-single-turn
+      profile at three turns even when research profiles specify 15 or 24. Consequently state movement
+      supplies no independent evidence about user action, retained skill, reassurance seeking, or
+      long-horizon effects. Presenting these derived values as synthetic trajectory evidence risks a
+      circular causal interpretation.
+    required_change: >-
+      Treat current state values as explicitly derived diagnostic annotations, not validation evidence.
+      Either remove them from formation-effect claims or implement a preregistered simulator in which
+      state and moderators affect observable subsequent actions, competing transition hypotheses are
+      testable, profile turn counts are honored, and parameters are calibrated or sensitivity-bounded
+      against independent human data. Report simulator uncertainty separately from judge and sampling
+      uncertainty and prohibit causal language about state changes.
+    acceptance_test: >-
+      Add tests showing that two transition models with the same response scores can generate different
+      subsequent observable choices and that conclusions report this sensitivity. A research-profile
+      longitudinal fixture must execute its declared horizon, vary preregistered initial states or
+      moderators, and label uncalibrated state changes as simulated assumptions rather than user outcomes.
+
+  - id: PSY-004
+    severity: High
+    title: Generic ordinal anchors and conceptual citations do not establish content-valid rubrics
+    evidence:
+      - path: rubrics/core.yaml
+        lines: 2-19
+      - path: rubrics/core.yaml
+        lines: 20-64
+      - path: rubrics/core.yaml
+        lines: 84-100
+      - path: src/human_formation_benchmark/models.py
+        lines: 128-138
+      - path: docs/research/EVIDENCE_MAP.md
+        lines: 3-19
+    why_it_matters: >-
+      All 16 dimensions share five generic labels, but each rubric supplies only indicators, failures,
+      edge cases, and one example. There are no dimension-specific behavioral anchors for scores 0
+      through 4, decision rules for insufficient_evidence versus not_applicable, or scenario-specific
+      proof obligations. Several citations concern human self-report constructs such as intellectual
+      humility, social connectedness, loneliness, self-efficacy, empathy, and reactance. The repository
+      appropriately denies construct equivalence, but it does not yet document the expert mapping or
+      content-validity process that converts those concepts into assistant-behavior ratings. This leaves
+      large discretion for construct drift while still producing precise numeric scores.
+    required_change: >-
+      Create a construct blueprint for every dimension that defines included and excluded content,
+      observable units, boundaries with adjacent dimensions, per-score anchors, missingness rules,
+      high-stakes proportionality, cultural risks, and the status of cited human measures as conceptual
+      references rather than adaptations. Document license review for every scale-like source considered.
+      Obtain independent domain-expert and affected-stakeholder content-validity ratings and preserve
+      disagreements before calling the public rubrics human approved.
+    acceptance_test: >-
+      For each dimension, blinded raters must score preregistered minimal pairs spanning 0 through 4 plus
+      insufficient-evidence and not-applicable cases using only the written rubric. Report item-level
+      agreement, confusion between neighboring constructs, content-validity ratings with rater
+      qualifications and positionality, and revisions for anchors that fail the prespecified thresholds.
+
+  - id: PSY-005
+    severity: High
+    title: Known-groups evidence is circular and does not test discriminant validity or warmth confounding
+    evidence:
+      - path: data/controls/known_groups.yaml
+        lines: 1-11
+      - path: src/human_formation_benchmark/providers.py
+        lines: 44-84
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 19-72
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 10-24
+      - path: docs/research/RESEARCH_METHOD.md
+        lines: 21-28
+    why_it_matters: >-
+      The known-groups test feeds hand-written supportive and harmful phrases directly into a scorer
+      built from those same phrases, then checks only that the grand means differ. The fake policies vary
+      simultaneously in valence, warmth, verbosity, certainty, referral language, and exact scorer
+      keywords. This is an implementation self-test, not known-groups validity. There are no
+      warmth-matched or verbosity-matched contrasts, no close neighboring constructs, no unrelated
+      criterion, no paraphrase robustness, and no uncertainty on expected effects. A read-only audit also
+      showed that a context-free list of positive keywords scores well while explicit negation of harmful
+      phrases is penalized, illustrating lexical construct-irrelevant variance.
+    required_change: >-
+      Relabel the current check as a scorer smoke test. Build a preregistered validation matrix containing
+      semantic minimal pairs, polarity and negation cases, verbosity controls, a warmth by substantive
+      benefit factorial, neighboring-construct contrasts, adversarial paraphrases, and policies not
+      authored from the scoring dictionary. Evaluate dimension-level expected directions with effect
+      sizes and clustered uncertainty, including failures and null expectations; do not use generated
+      fake text as independent criterion truth.
+    acceptance_test: >-
+      On a held-out human-rated set, show that substantive formation-supportive behavior is detected at
+      matched warmth and length, that warmth alone does not raise unrelated dimensions, that negated
+      harmful phrases are not penalized as endorsements, and that each dimension separates its intended
+      construct from at least two neighboring dimensions under prespecified effect and error thresholds.
+
+  - id: PSY-006
+    severity: Medium
+    title: Public-core sampling cannot support cultural or worldview generalization
+    evidence:
+      - path: data/public_core/scenarios.yaml
+        lines: 4-26
+      - path: data/public_core/scenarios.yaml
+        lines: 28-65
+      - path: data/public_core/scenarios.yaml
+        lines: 95-110
+      - path: data/public_core/scenarios.yaml
+        lines: 221-246
+      - path: data/public_core/manifest.yaml
+        lines: 1-9
+    why_it_matters: >-
+      The 24-item public core uses one shared synthetic-user context, shared follow-ups, and one author
+      provenance record. A read-only inventory found 21 of 24 scenarios marked low worldview salience,
+      20 of 24 short, no positive, negative, ambiguous, or adversarial control labels, and only four
+      appearances each for competence, pluralism, and reality contact versus twelve for truth. There is
+      no population or use-case sampling frame, language variation, cultural adaptation record, or
+      documented representation of disability, class, geography, collectivist duty, or multiple
+      authorities within traditions. Marking the pack human approved does not identify who approved it
+      or make it representative.
+    required_change: >-
+      Publish a sampling and coverage blueprint with target use cases, exclusions, dimension by domain
+      balance, risk strata, worldview and cultural contexts, language scope, provenance, approver
+      qualifications and positionality, and intended generalization limits. Add culturally reviewed
+      contrast sets and private extensions without treating demographic labels as stereotypes. Prohibit
+      group comparisons until sample adequacy, DIF, and measurement invariance are evaluated.
+    acceptance_test: >-
+      Generate a machine-checked coverage report and have independent culturally and tradition-competent
+      reviewers evaluate the expanded scenarios for relevance, stereotyping, and construct equivalence.
+      Public reports must display the achieved coverage and refuse or clearly suppress unsupported group,
+      cultural, language, or worldview comparisons.
+
+  - id: PSY-007
+    severity: Medium
+    title: Human adjudication has no rating ingestion, calibration, or reliability path
+    evidence:
+      - path: src/human_formation_benchmark/cli.py
+        lines: 361-380
+      - path: src/human_formation_benchmark/models.py
+        lines: 158-174
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 179-185
+      - path: docs/ethics/HUMAN_SUBJECTS.md
+        lines: 1-14
+      - path: docs/project/IMPLEMENTATION_STATUS.md
+        lines: 23-25
+    why_it_matters: >-
+      The adjudicate command only exports low-confidence deterministic results. There is no separate
+      human-rater schema, blinded assignment, training and calibration set, import path, provenance,
+      adjudication outcome, or reliability computation; Krippendorff's alpha is always null. The
+      documentation candidly marks this incomplete, which is appropriate for an alpha, but no result
+      should imply research-grade assurance or human calibration until the full path exists.
+    required_change: >-
+      Define a human-rating protocol and distinct data model with rater training, blinded balanced
+      assignment, repeated calibration items, missingness reasons, adjudication that preserves original
+      disagreement, positionality and conflict disclosures, and privacy controls. Implement import and
+      reproducible agreement and calibration analyses appropriate to ordinal, clustered ratings. Keep
+      unvalidated reports explicitly pre-validation until independently collected ratings meet
+      prespecified criteria.
+    acceptance_test: >-
+      Round-trip a blinded fixture through queue creation, independent ratings, validation, import,
+      disagreement-preserving adjudication, and ordinal agreement output. Include tests for duplicate
+      raters, missing assignments, malformed ratings, low agreement, and failed calibration, all of which
+      must prevent an assurance upgrade.
+
+non_blocking_reservations:
+  - >-
+    The claim boundary in README.md, docs/research/MEASUREMENT_LIMITS.md, and the sample report correctly
+    denies direct inference about a real person's latent traits and causal outcomes. Preserve that
+    language while remediating the operational overclaims above.
+  - >-
+    docs/research/RESEARCH_METHOD.md correctly warns against reflexive Cronbach's alpha for a
+    multidimensional vector and names ordinal omega or item-response approaches as conditional
+    alternatives. No current internal-consistency coefficient is reported, so there is no present
+    reliability misuse to remediate beyond keeping future analyses assumption-driven.

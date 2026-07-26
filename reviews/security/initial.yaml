@@ -1,0 +1,248 @@
+reviewer_role: security_privacy_open_source
+reviewed_commit: b4de2ead5d8323fc390325781e3c0726a5b878d3
+verdict: request_changes
+findings:
+  - id: SEC-001
+    severity: High
+    title: Sensitive model output and provider errors cross persistence boundaries without redaction
+    evidence:
+      - path: src/human_formation_benchmark/storage.py
+        lines: 19-37
+      - path: src/human_formation_benchmark/storage.py
+        lines: 50-80
+      - path: src/human_formation_benchmark/runner.py
+        lines: 246-285
+      - path: src/human_formation_benchmark/runner.py
+        lines: 383-391
+      - path: src/human_formation_benchmark/cli.py
+        lines: 306-310
+    why_it_matters: >-
+      The cache claims never to contain credentials, but writes the raw ProviderResponse. The run
+      store likewise writes full prompts and completions, and provider exception text is copied
+      verbatim into the manifest and CLI. A local reproduction stored token=leak-me-now in the cache.
+      On the review host, cache files were mode 0644 and cache/run directories were 0755. A model
+      echo, malicious pack, or SDK exception can therefore place a key, direct identifier, or private
+      scenario text into durable caches, reports, exports, or world-readable local files.
+    required_change: >-
+      Define one central sensitive-output boundary and apply it before cache writes, manifest error
+      writes, CLI rendering, reports, and exports. Never cache a response detected as sensitive.
+      Persist only redacted transcripts by default, or require an explicit protected raw-transcript
+      mode that is documented as sensitive. Create cache and run directories/files with restrictive
+      POSIX permissions where supported, and document the Windows equivalent and retention/pruning
+      behavior. Keep scoring on the in-memory response if redaction would change the measurement.
+    acceptance_test: >-
+      Add an end-to-end provider fixture whose completion and raised exception each contain several
+      credential and PII patterns. After run, resume, report, export, cache inspect, and failure, no
+      sentinel appears anywhere under the cache, run, or export roots or on captured stdout/stderr.
+      On POSIX, assert private directories are 0700 and sensitive files are 0600. Also assert a
+      sensitive completion is not present as a reusable cache entry.
+
+  - id: SEC-002
+    severity: High
+    title: The file labeled Apache-2.0 is a shortened and modified license
+    evidence:
+      - path: LICENSE
+        lines: 7-43
+      - path: LICENSE
+        lines: 60-105
+      - path: pyproject.toml
+        lines: 5-12
+      - path: NOTICE
+        lines: 1-6
+    why_it_matters: >-
+      The repository and package claim Apache-2.0, but LICENSE omits material language from the
+      official definitions, redistribution conditions, warranty disclaimer, liability limitation,
+      and appendix. A hand-shortened legal text is not the standard Apache License 2.0 and creates
+      avoidable ambiguity for contributors, packagers, and downstream users. The wheel also contains
+      CC-BY-4.0 data, so the mixed-license boundary needs to remain explicit in packaged metadata.
+    required_change: >-
+      Replace LICENSE with the complete, unmodified official Apache License 2.0 text and put the
+      project copyright/application notice in NOTICE or the standard appendix location. Verify that
+      built wheel and sdist include LICENSE, LICENSE-DATA, and NOTICE, and make the code versus
+      data/documentation license boundary explicit in package metadata and contributor guidance.
+    acceptance_test: >-
+      Compare the legal body byte-for-byte, apart from line-ending normalization, with the official
+      Apache-2.0 text. Build wheel and sdist, inspect both archives, and assert LICENSE,
+      LICENSE-DATA, and NOTICE are present. Confirm package metadata and README do not claim that
+      CC-BY data is Apache-licensed.
+
+  - id: SEC-003
+    severity: High
+    title: The advertised release path fails before checksums and attestations can be published
+    evidence:
+      - path: scripts/pre_release.py
+        lines: 64-70
+      - path: CHANGELOG.md
+        lines: 19-21
+      - path: .github/workflows/release.yml
+        lines: 20-36
+    why_it_matters: >-
+      The prerelease gate requires the literal string v0.1.0-alpha.1, while the changelog records the
+      conventional version without the v prefix, so the intended tag fails the gate. The release job
+      then copies dist/schemas as a directory before running shasum over dist/*; the same command
+      returns exit 1 on that directory. Consequently the release cannot reach the SBOM checksum,
+      provenance attestation, or GitHub Release steps, and the release process is not currently
+      reproducible.
+    required_change: >-
+      Normalize the tag before changelog comparison. Generate checksums only for a deterministic,
+      sorted set of regular release files, or package/remove the loose schema directory first.
+      Make the SBOM describe the released runtime artifact or pinned runtime dependency set rather
+      than an incidental all-groups development environment, and ensure every published artifact is
+      either directly attested or covered by an attested checksum manifest.
+    acceptance_test: >-
+      Run a local workflow-equivalent release dry run for v0.1.0-alpha.1 from a clean tagged
+      checkout. It must build and clean-install the wheel, validate the public pack, produce the
+      release notes, SBOM, schema archive, deterministic SHA256SUMS, and provenance subject list with
+      no directory hashing error. Verify every uploaded regular file against SHA256SUMS and verify
+      the attestation subjects before allowing publication.
+
+  - id: SEC-004
+    severity: High
+    title: Main and release tags are not protected while tag pushes receive release credentials
+    evidence:
+      - path: .github/workflows/release.yml
+        lines: 3-18
+      - path: docs/architecture/adr/0004-solo-main-protection.md
+        lines: 3-8
+      - path: GitHub repository settings queried 2026-07-25
+        lines: rulesets endpoint returned an empty list; main protection returned 404
+    why_it_matters: >-
+      Any pushed v* tag runs repository code with contents:write, id-token:write, and
+      attestations:write. The accepted ADR promises protected main, but the live public repository
+      currently has neither a ruleset nor legacy main protection, and no tag rule is present. A
+      compromised write credential can therefore bypass reviewed main, tag arbitrary workflow code,
+      mint provenance, and publish a release.
+    required_change: >-
+      Before the first tag, apply active main and v* rulesets. Require pull requests, the stable CI,
+      docs, package, security, and benchmark checks, conversation resolution, linear history, and
+      prohibit force-push and deletion. Restrict release tags to reviewed commits reachable from
+      protected main and use a protected release environment if available. Preserve the documented
+      zero-approval solo-maintainer exception without weakening status checks.
+    acceptance_test: >-
+      Query the GitHub API and assert active branch and tag rulesets with the documented controls.
+      Demonstrate that a direct main push, force push, deletion, and v* tag from an unmerged branch
+      are rejected, while a reviewed protected-main commit can complete the release workflow.
+
+  - id: SEC-005
+    severity: High
+    title: Private pack routing is not distinct from canonical public-core publication
+    evidence:
+      - path: docs/security/SECRETS.md
+        lines: 8-10
+      - path: src/human_formation_benchmark/config.py
+        lines: 87-90
+      - path: src/human_formation_benchmark/pack.py
+        lines: 14-31
+      - path: src/human_formation_benchmark/pack.py
+        lines: 39-49
+    why_it_matters: >-
+      Documentation promises external private extensions through HFB_HOME, but the loader always
+      reads data/public_core/scenarios.yaml, validation requires approved_for_public_core, and
+      build_manifest labels every supplied path hfb-public-core, canonical, and human-approved.
+      There is no explicit private-pack identity, run selection, cache policy, or publication guard.
+      A private evaluator is pushed toward imitating the public tree and can accidentally mislabel or
+      export held-out material as canonical public content.
+    required_change: >-
+      Add an explicit contained private-pack input and manifest model with caller-supplied identity,
+      content hash, canonical=false, and a license/disclosure policy. Separate public-canonical
+      approval from private validation. Default private runs to no shared cache, protected local
+      storage, and no transcript export; require an explicit reviewed action to promote any content
+      into public_core. Include only hashes and non-sensitive provenance in public-facing reports.
+    acceptance_test: >-
+      Run a synthetic external pack with approved_for_public_core=false without placing it under
+      data/public_core. Its run manifest must identify the private pack hash with canonical=false,
+      must not copy pack text into the repository or shared cache, and must not label it
+      hfb-public-core. An attempt to create a canonical public manifest from that pack must fail until
+      the documented human-review/promotion path is used.
+
+  - id: SEC-006
+    severity: Medium
+    title: Untrusted YAML and JSON limits are applied only after whole-file allocation
+    evidence:
+      - path: src/human_formation_benchmark/config.py
+        lines: 48-53
+      - path: src/human_formation_benchmark/pack.py
+        lines: 14-21
+      - path: src/human_formation_benchmark/storage.py
+        lines: 65-88
+    why_it_matters: >-
+      load_yaml and validate_pack call read_text before checking the one-megabyte bound, and resume
+      and trajectory reads have no byte, line-count, nesting, or record-count bounds. safe_load
+      prevents object construction attacks but does not itself provide resource limits for aliases
+      and deeply nested structures. A malicious pack or run directory can consume excessive memory
+      or CPU before schema validation.
+    required_change: >-
+      Check file type and size before allocation, read with explicit bounds, reject symlinks where
+      the trust model requires a regular file, and enforce YAML alias/depth/node limits or a
+      comparably bounded parser. Stream JSONL with per-line and total-record limits instead of
+      loading the entire file. Document limits and fail with redacted errors.
+    acceptance_test: >-
+      Add tests for an oversized sparse file, oversized single JSONL record, excessive record count,
+      deep YAML nesting, and alias expansion. Each must fail quickly before whole-file read or schema
+      materialization, without high memory growth, traceback leakage, or creating output files.
+
+  - id: SEC-007
+    severity: Medium
+    title: Prompt-injection controls are documented but lack end-to-end adversarial regression tests
+    evidence:
+      - path: docs/security/PROMPT_INJECTION.md
+        lines: 3-13
+      - path: tests/security/test_security.py
+        lines: 13-40
+      - path: src/human_formation_benchmark/evals/formation_core.py
+        lines: 44-69
+    why_it_matters: >-
+      The security suite tests redaction regexes, path containment, and text size in isolation, but
+      none of the documented fake-system, key-exfiltration, judge-instruction, shell-fragment, HTML,
+      or path payloads crosses the CLI, runner, scorer, report, and Inspect-native boundaries. Future
+      model judges, templates, pack installers, or exports can silently turn untrusted text into
+      control data without a failing test.
+    required_change: >-
+      Add a small license-safe adversarial fixture set and end-to-end security tests that preserve
+      scenario/model content as data, keep evaluator policy fixed, autoescape HTML, avoid command and
+      path use, prevent score demands from changing judge authority, and exercise both the native CLI
+      and Inspect task. Treat every successful red-team payload as a permanent regression.
+    acceptance_test: >-
+      Exercise fake system messages, ignore-evaluator text, a requested score of 4, shell and SQL
+      fragments, traversal strings, script tags, key-exfiltration requests, and a secret-like model
+      echo. Assert no command runs or file escapes its root, HTML is escaped, evaluator configuration
+      and budget are unchanged, the score cannot be directly dictated, and no sentinel secret is
+      persisted or printed.
+
+  - id: SEC-008
+    severity: Medium
+    title: The known command-injection dependency exception does not verify its safety premise
+    evidence:
+      - path: docs/security/DEPENDENCY_EXCEPTIONS.md
+        lines: 3-19
+      - path: scripts/check_dependency_exceptions.py
+        lines: 8-22
+      - path: .github/workflows/ci.yml
+        lines: 65-74
+    why_it_matters: >-
+      CI suppresses PYSEC-2026-2132 because HFB and the current Inspect source allegedly do not call
+      click.edit, but the machine gate checks only a calendar date. It does not bind the exception to
+      Click 8.2.1 and the reviewed Inspect version, confirm the vulnerable API remains unreachable,
+      or fail if the dependency graph changes. A lockfile update before the review deadline can
+      invalidate the documented premise while the audit remains green.
+    required_change: >-
+      Make the exception structured and machine-verifiable: bind it to exact affected package and
+      dependency versions, advisory aliases, rationale evidence, owner, and expiry; fail closed if
+      the graph or relevant call surface changes. Remove the ignore as soon as Inspect permits a fixed
+      Click version, and do not renew it without a new review artifact.
+    acceptance_test: >-
+      Show that the gate passes only for the reviewed locked versions, fails when Click or Inspect is
+      changed, fails on or after the deadline, and fails if a click.edit call is introduced in HFB or
+      the reviewed dependency path. A dependency update that permits Click 8.3.3 must remove the
+      ignore and make an unexcepted pip-audit pass.
+non_blocking_reservations:
+  - >-
+    The GitHub Actions are immutably SHA-pinned and mostly use least-privilege permissions; keep the
+    version comments and verify update PRs rather than reverting to floating tags.
+  - >-
+    Private vulnerability reporting, issue-template redirection, CodeQL, dependency review,
+    Dependabot, Scorecard, opt-in live tests, and the no-clinical-use boundary are sound foundations.
+  - >-
+    The redaction detector is necessarily incomplete. Documentation should continue to say that
+    lexical screening cannot make arbitrary real-world data safe and that real personal data is out
+    of scope without separate qualified oversight.

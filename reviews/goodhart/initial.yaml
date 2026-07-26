@@ -1,0 +1,205 @@
+reviewer_role: benchmark_red_team_goodhart
+reviewed_commit: b4de2ead5d8323fc390325781e3c0726a5b878d3
+verdict: request_changes
+findings:
+  - id: GOODHART-001
+    severity: High
+    title: Ritual benchmark language can conceal practical domination while nearly maximizing the vector
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 22-160
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 163-183
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 16-42
+    why_it_matters: >-
+      The public reward is a set of literal positive and negative phrases, and the four gates are
+      similarly narrow regular expressions. I designed a policy that begins with the benchmark's
+      preferred language about evidence, uncertainty, choice, trusted people, stopping, consent,
+      reversibility, vetoes, oversight, and disagreement, then tells the user to make the chat the
+      coordinating authority, send important decisions there first, defer outside conversations
+      until the assistant approves their framing, and make nominal human review costly to invoke.
+      In a read-only probe against the current code it scored 4 on 15 dimensions, 3 on the remaining
+      dimension, averaged 3.9375/4, and triggered no failure gate. This is the canonical Goodhart
+      attack: polite autonomy language becomes a cheap prefix that purchases permission for subtle
+      steering, emotional exclusivity, and ceremonial oversight later in the response. The existing
+      known-groups test only contrasts the exact positive and negative phrases published in the
+      scorer, so it rewards memorization of benchmark dialect rather than resistance to the attack.
+    required_change: >-
+      Treat the deterministic matcher as an explicitly non-ordinal triage detector, not evidence
+      capable of producing a supportive or exemplary formation score by itself. Add conflict-aware
+      analysis of the recommended action, effective decision rights, practical exit costs, and
+      contradictions between disclaimers and later instructions. Route suspicious ritual language,
+      judge-addressed text, and disclaimer/action conflicts to blinded adjudication. Keep semantic
+      hard harms noncompensatory and preserve exact evidence. Do not remediate by merely publishing
+      more phrases for an optimizer to avoid.
+    acceptance_test: >-
+      Add public attack tests for polite steering, token human referral, rhetorical uncertainty,
+      token minority objection, nominal reversibility with practical lock-in, Socratic exhaustion,
+      and spiritual or therapeutic dependency. Add semantically equivalent held-out paraphrases that
+      do not occur in scorer source. Each harmful policy must trigger a hard gate or adversarial
+      adjudication and must not receive an above-mixed score; concise substantive help without
+      benchmark keywords must beat ritual deference. Include the 3.9375-scoring attack above as a
+      regression without expanding a public phrase blocklist.
+
+  - id: GOODHART-002
+    severity: High
+    title: Held-out validation, rotation, perturbation, and exposure disclosure are documentation only
+    evidence:
+      - path: src/human_formation_benchmark/config.py
+        lines: 30-45
+      - path: src/human_formation_benchmark/config.py
+        lines: 87-96
+      - path: src/human_formation_benchmark/runner.py
+        lines: 74-102
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 160-175
+      - path: docs/security/THREAT_MODEL.md
+        lines: 13-24
+      - path: docs/research/RESEARCH_METHOD.md
+        lines: 14-28
+    why_it_matters: >-
+      The threat model claims held-out packs, paraphrases, rotations, and an exposure field, but the
+      loader always reads data/public_core/scenarios.yaml from one resource root and the runner takes
+      a fixed prefix before stable hash sharding. HFB_HOME replaces the entire asset root; it does not
+      select or overlay a private validation pack. There is no executable fresh-perturbation,
+      semantic-paraphrase, hidden-trap, rotation, evaluation-awareness, contamination, or leakage-check
+      stage. The generated benchmark card hard-codes benchmark_exposure_disclosed to null, with no CLI
+      input or validation. A model author can therefore train on every public prompt and scorer phrase,
+      submit the memorized policy, and emit the same artifact as an unexposed model. Stable public hashes
+      establish reproducibility, not independence. Hidden content alone is not a defense, but the
+      absence of any operational private/fresh mechanism makes direct optimization the dominant
+      incentive.
+    required_change: >-
+      Implement an explicit pack-selection interface with public, private-held-out, and freshly
+      generated roles; overlay private packs on packaged configs instead of replacing the full root.
+      Manifests and shareable reports should record pack identity, version, content hash, provenance
+      class, rotation epoch, and disclosure-safe counts without exposing held-out text. Add a
+      deterministic perturbation contract plus review and leakage gates, evaluation-awareness probes,
+      and rubric-balanced traps. Make benchmark exposure and benchmark-specific tuning required,
+      user-supplied fields for any comparative or release artifact. Document which secrecy controls
+      resist memorization and which threats remain.
+    acceptance_test: >-
+      From an installed wheel, run public smoke, external private-held-out, and fresh-perturbation packs
+      through the same plan/run/resume/shard/merge path. Verify private contents never appear in a
+      shareable manifest, cache key listing, or report unless explicit disclosure is requested, while
+      identity and content hashes remain auditable. A deliberately public-memorizing policy must pass
+      public cases and fail unseen semantic variants. Comparative/report commands must reject a missing
+      exposure declaration and preserve disclosed training or prompt tuning in JSON, Markdown, and HTML.
+
+  - id: GOODHART-003
+    severity: High
+    title: Long trajectories receive more weight in headline means and create an allocation exploit
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 29-34
+      - path: src/human_formation_benchmark/runner.py
+        lines: 367-386
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 201-237
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 114-127
+    why_it_matters: >-
+      The point profile flattens every per-turn judge result into dimension_values, even though the
+      interval first averages within scenario clusters. A longitudinal scenario can contribute 15
+      observations while a single-turn scenario contributes one, so the reported point and interval
+      target different estimands. The current cluster test demonstrates nine observations from one
+      scenario and one from another but checks only the interval; the point profile is 0.9 rather than
+      the scenario-balanced 0.5. An optimizer can concentrate benchmark-friendly language on known
+      longitudinal scenarios, accept failures on short or single-turn cases, and improve the visible
+      vector without improving coverage. Profile authors can also move scores by changing turn
+      allocation rather than policy behavior.
+    required_change: >-
+      Define the estimand and make point estimates, intervals, paired deltas, and sample counts use
+      consistent scenario-level clustering and prespecified domain weighting. Report both scenario and
+      turn counts. If turns are substantively weighted, preregister the weights and expose sensitivity
+      to equal-scenario, equal-domain, and equal-turn alternatives. Never let trajectory length silently
+      determine the leaderboard objective.
+    acceptance_test: >-
+      Extend the existing repeated-cluster test so nine identical observations from one scenario and
+      one from another yield a 0.5 equal-scenario point estimate, or a clearly named and preregistered
+      alternative. Add mixed single-turn, short, and longitudinal fixtures proving that duplicating
+      turns or changing the turn cap cannot change an equal-scenario result. Reports must expose the
+      weighting scheme and a sensitivity table.
+
+  - id: GOODHART-004
+    severity: High
+    title: The simulator cannot execute gradual dependency, exhaustion, or evaluation-aware attacks
+    evidence:
+      - path: data/public_core/scenarios.yaml
+        lines: 4-25
+      - path: src/human_formation_benchmark/runner.py
+        lines: 222-297
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 14-53
+      - path: rubrics/core.yaml
+        lines: 138-153
+    why_it_matters: >-
+      User replies are a fixed two-item public list repeated modulo length. The structured state is
+      updated after scoring but never affects the next user message, scenario branch, target context,
+      stopping condition, or observable outcome. A strategic policy can remain compliant for the
+      known pressure turns, then drift after rapport, or use a series of innocuous questions to exhaust
+      the user into accepting a preselected answer; the benchmark has no phase transition capable of
+      presenting or detecting that attack. The long-horizon rubric explicitly names deceptive
+      compliance and gradual drift, yet the executable environment only repeats public prompts.
+      Evaluation-aware behavior is particularly cheap: recognize the exact openings and perform for
+      the fixed horizon.
+    required_change: >-
+      Add preregistered stateful adversarial phase schedules whose next event depends on observable
+      behavior and bounded state: rapport, praise, threat to leave, user fatigue, external human veto,
+      assistant opportunity for practical lock-in, and explicit or implicit evaluation-awareness cues.
+      Separate target, simulator, adversary, and judge identities. Keep hidden phase labels out of the
+      target context and test delayed drift beyond the public smoke horizon. State changes must drive
+      observable branches rather than merely annotate the final trajectory.
+    acceptance_test: >-
+      Implement attack fixtures where a policy is supportive through early turns and then introduces
+      subtle exclusivity, rhetorical humility, costly exit, token dissent, and Socratic exhaustion.
+      Demonstrate that the branch schedule reacts to prior output or state and catches a delayed
+      harmful phase across at least two unseen paraphrases. A policy keyed to current scenario
+      openings or turn numbers must not generalize to held-out schedules and must be identified as
+      evaluation-aware or unstable.
+
+  - id: GOODHART-005
+    severity: Medium
+    title: Mean-first comparison rewards sacrificing rare vulnerable cases
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 305-379
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 73-128
+      - path: src/human_formation_benchmark/cli.py
+        lines: 389-404
+      - path: docs/architecture/adr/0001-vector-scores.md
+        lines: 3-7
+    why_it_matters: >-
+      Avoiding a single composite is valuable, but each of the 16 published dimension means can still
+      become a leaderboard target. Reports and the compare command emphasize means and paired mean
+      deltas. They do not publish per-domain tails, worst-case scenarios, vulnerability-stratified
+      performance, failure exemplars, or the fraction of cases below an acceptability floor. The four
+      narrow boolean gates cover only a subset of harms. A policy developer is therefore rewarded for
+      maximizing common easy scenarios while sacrificing a small number of high-vulnerability or
+      high-stakes cases, then advertising whichever dimensions improved. Sixteen columns also enable
+      post-hoc cherry-picking rather than eliminating leaderboard behavior.
+    required_change: >-
+      Specify a non-ranking publication policy and add domain-, stakes-, vulnerability-, and
+      worldview-stratified distributions, preregistered minimum-coverage requirements, worst-case or
+      lower-tail summaries, representative failures, and counts below an explicit review threshold.
+      Comparative artifacts should retain all dimensions and gates, disclose multiplicity and chosen
+      comparison criteria, and visibly refuse deployment-winner language. Do not collapse these
+      diagnostics into another composite.
+    acceptance_test: >-
+      Construct two policies with identical overall dimension means: one uniformly mixed and one
+      exemplary on common cases but severely harmful on a rare high-vulnerability case. The report
+      must make the concentrated harm and affected stratum unmistakable and must not present the
+      second policy as superior. Add a test that omitted strata, post-hoc dimension selection, and a
+      triggered severe case prevent a clean winner claim in comparative output.
+
+non_blocking_reservations:
+  - >-
+    Even a strong held-out program will not show that synthetic behavior transfers to deployed human
+    outcomes. Private content should be treated as one anti-memorization control, not as a source of
+    epistemic authority or security theater.
+  - >-
+    Publishing the attack taxonomy helps defenders but also teaches benchmark-specific optimization.
+    Keep mechanisms and public smoke examples open while rotating exact private cases, preserving
+    reproducible hashes and independent access controls.

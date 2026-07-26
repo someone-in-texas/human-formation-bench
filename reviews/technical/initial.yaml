@@ -1,0 +1,302 @@
+reviewer_role: technical_reproducibility
+reviewed_commit: eecf2023764bf21c5f12f53d32f1b077b2509929
+verdict: request_changes
+findings:
+  - id: TECH-001
+    severity: High
+    title: Configured model judges are not executed, but profiles can report research assurance
+    evidence:
+      - path: configs/profiles/research.yaml
+        lines: 13-22
+      - path: src/human_formation_benchmark/runner.py
+        lines: 262-268
+      - path: src/human_formation_benchmark/runner.py
+        lines: 400-407
+      - path: docs/methodology/SCORING.md
+        lines: 7-14
+    why_it_matters: >
+      The runner unconditionally calls deterministic_score and never dispatches the judge models
+      named in RunOptions or the profile. It then copies the profile's assurance label into the
+      report. In a targeted research-profile run with --judge model-judge-primary, the manifest
+      named model-judge-primary, every emitted JudgeResult named deterministic-v1, and the report
+      said research assurance. Planning also prices judge calls that execution never makes. This
+      is a materially false account of both the evidence and expected spend.
+    required_change: >
+      Either implement the configured judge ensemble with separately identified models, costs,
+      results, agreement, and sensitivity, or reject unsupported judges and force every
+      deterministic-only run to low assurance. Derive assurance from completed evidence and
+      calibration gates, never from a profile string alone, and make plan and run use the same call
+      graph.
+    acceptance_test: >
+      Add a fake target plus two instrumented fake judge providers. Assert that plan and run make
+      the same declared calls, every configured judge contributes labeled results and cost/usage,
+      and disagreement is reported. A run naming an unavailable judge must fail nonzero before
+      target calls. A deterministic-only research-profile run must not produce research assurance.
+
+  - id: TECH-002
+    severity: High
+    title: Resume can silently mix results produced from different profiles, prompts, rubrics, and packs
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 131-167
+      - path: src/human_formation_benchmark/runner.py
+        lines: 294-341
+      - path: src/human_formation_benchmark/models.py
+        lines: 269-295
+      - path: docs/tutorials/REPRODUCIBILITY.md
+        lines: 1-8
+    why_it_matters: >
+      Resume reloads the current profile, scenarios, and policy files before checking only that the
+      profile name and model string match the old manifest. It neither recomputes nor compares the
+      stored config and pack hashes. The config hash includes policy IDs but not policy prompt
+      contents, rubric contents, simulator version, or judge configuration. The resolved config
+      stores scenario IDs rather than immutable scenario bodies. A changed checkout or HFB_HOME can
+      therefore append incompatible trajectories to one run while retaining the original hashes.
+    required_change: >
+      Snapshot or content-address every execution input, including resolved profile, selected
+      scenarios, policy prompts, rubrics, judge configurations, simulator/scorer versions, and
+      price data. Resume must execute from that immutable snapshot or fail before any call when
+      current assets do not match. Record per-call token usage, retries, and cache provenance in the
+      resumable ledger.
+    acceptance_test: >
+      Interrupt a multi-sample run, then independently change a selected scenario, a policy prompt,
+      a rubric, and the profile seeds/turn count. For each mutation, resume must either use the
+      archived original bytes or fail before a provider call with an explicit hash mismatch.
+      Repeated interruption at every checkpoint boundary must produce exactly one result per sample
+      and a manifest whose hashes verify all emitted trajectories.
+
+  - id: TECH-003
+    severity: High
+    title: Research and frontier profiles are not scalable implementations of their declared workloads
+    evidence:
+      - path: configs/profiles/research.yaml
+        lines: 3-19
+      - path: configs/profiles/frontier_audit.yaml
+        lines: 3-19
+      - path: src/human_formation_benchmark/runner.py
+        lines: 350-394
+      - path: src/human_formation_benchmark/storage.py
+        lines: 82-128
+    why_it_matters: >
+      Every non-single-turn trajectory is silently capped at three turns even when research and
+      frontier profiles declare 15 and 24. The runner constructs one asyncio task per trajectory
+      and passes the entire work list to gather. Finalization reads all JSONL into a list, builds all
+      trajectory and score rows in memory, then constructs whole PyArrow tables. The configured TPM
+      limit is unused. With the declared frontier Cartesian product this produces hundreds of
+      thousands of tasks and potentially multi-gigabyte transcripts before columnar storage helps.
+    required_change: >
+      Honor the resolved trajectory length, replace eager gather with a bounded producer-consumer
+      queue, implement RPM and TPM backpressure, and stream checkpoints and columnar/SQL ingestion
+      without materializing the full run. Implement bounded retry with jitter and cancellation, or
+      remove the corresponding claims and profile settings until supported.
+    acceptance_test: >
+      Run an instrumented derived profile with at least 10,000 trajectories and long transcripts.
+      Assert exact declared turn counts, a fixed upper bound on queued/in-flight work, bounded peak
+      memory independent of total sample count, enforced RPM and TPM windows, graceful SIGINT
+      checkpointing, and lossless resume. Include provider 429/5xx, timeout, and cancellation cases
+      with deterministic retry accounting.
+
+  - id: TECH-004
+    severity: High
+    title: Shard merge accepts incomplete or failed shard sets and relabels them completed
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 412-445
+      - path: tests/integration/test_runner.py
+        lines: 45-61
+      - path: docs/tutorials/RUN_AT_SCALE.md
+        lines: 1-8
+    why_it_matters: >
+      Merge checks only config_hash and duplicate trajectory IDs. It does not require every expected
+      shard index, distinct indices, successful source statuses, matching commit/package/pack
+      provenance, or complete expected sample coverage. It overwrites status with completed,
+      overwrites the declared shard count with the number supplied, and hard-codes research
+      assurance. A targeted probe merged only shard 0 of a declared two-shard run and produced a
+      completed, one-shard, research-assurance result.
+    required_change: >
+      Define a shard-plan manifest with an immutable run-family ID, expected indices and sample IDs.
+      Refuse missing, duplicate, mismatched, failed, interrupted, or budget-exhausted shards by
+      default. Preserve source assurance and lineage. If partial merge is useful, require an explicit
+      flag and mark all output artifacts partial with coverage and failure counts.
+    acceptance_test: >
+      Assert that merging one of two expected shards fails; duplicate index 0 fails; a failed shard
+      fails; a shard from another commit, pack, or price/config fingerprint fails; and the complete
+      set 0..N-1 succeeds with exact sample coverage and a verifiable lineage hash. Test explicit
+      partial merge separately and require a partial status and visible coverage warning.
+
+  - id: TECH-005
+    severity: High
+    title: The hard budget mechanism detects some overruns only after spend and has no real retry reserve
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 226-259
+      - path: src/human_formation_benchmark/pricing.py
+        lines: 34-76
+      - path: src/human_formation_benchmark/pricing.py
+        lines: 91-124
+      - path: README.md
+        lines: 60-62
+    why_it_matters: >
+      A reservation is an ad hoc character-count estimate multiplied by 1.5, not a proven maximum
+      under provider tokenization and pricing. settle adds actual cost before detecting that the
+      absolute cap has already been exceeded, and many calls may be in flight on underestimated
+      reservations. No retries exist despite reserving ten percent and documenting it as retry
+      reserve. The plan uses fixed token assumptions, prices judge calls at the target-model rate,
+      and is disconnected from the actual execution graph. At thousand-dollar scale this is not a
+      defensible hard-stop guarantee.
+    required_change: >
+      Define hard-stop semantics including the maximum unavoidable indivisible-call margin. Use
+      provider-aware tokenization or conservative request caps and separate target/judge price
+      entries. Bound aggregate in-flight exposure so actual spend cannot exceed the cap beyond the
+      documented margin, stop admitting work globally on exhaustion, and account explicitly for
+      retries, cached calls, and provider-reported versus calculated cost.
+    acceptance_test: >
+      Use adversarial providers whose actual usage is at, below, and above estimates, including
+      concurrent delayed responses and retryable failures. Assert that no new call starts once its
+      worst-case charge would violate the cap, total overrun never exceeds the documented single
+      indivisible-call margin, queued work is cancelled, retry reserve is actually consumed only by
+      retries, and plan high estimates cover observed calls for both target and judge prices.
+
+  - id: TECH-006
+    severity: High
+    title: A partially failed run exits successfully and presents an ordinary aggregate report
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 360-409
+      - path: src/human_formation_benchmark/cli.py
+        lines: 268-310
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 61-94
+    why_it_matters: >
+      Per-sample exceptions are swallowed into the manifest, after which run_benchmark returns
+      normally even when status is failed. The CLI therefore exits zero. Reports aggregate whatever
+      happened to succeed and lead with trajectories, cost, and assurance without a prominent run
+      status, completion denominator, or failed-sample warning. In a targeted two-policy probe where
+      one policy ID was invalid, the manifest was failed while hfb run exited zero and rendered the
+      surviving policy's profile. This can turn selective missingness into apparently valid results.
+    required_change: >
+      Make failed and budget-exhausted terminal states nonzero in normal and JSON modes while still
+      preserving partial artifacts. Put status, expected/completed/failed counts, error categories,
+      and whether comparisons remain paired at the top of every report. Refuse high-assurance or
+      comparative claims when missingness breaks the design.
+    acceptance_test: >
+      Run one valid and one failing policy over paired scenarios. Assert nonzero CLI exit, failed or
+      partial machine-readable status, prominent warnings in Markdown and HTML, exact completion and
+      failure denominators, and no unqualified policy comparison. Test all-samples-fail as well; it
+      must finalize useful partial artifacts without the current empty-table crash.
+
+  - id: TECH-007
+    severity: Medium
+    title: The shared content cache is neither concurrency-safe nor provenance-complete
+    evidence:
+      - path: src/human_formation_benchmark/storage.py
+        lines: 19-40
+      - path: src/human_formation_benchmark/runner.py
+        lines: 226-270
+      - path: docs/tutorials/RUN_AT_SCALE.md
+        lines: 3-8
+    why_it_matters: >
+      Cache writes go directly to the final path without atomic replace or locking, while the scale
+      guide recommends shared caches. Cross-process readers can observe partial files and concurrent
+      writers can race. The key omits a fingerprint of endpoint/provider configuration and scorer
+      version, so identical model strings can collide across changed local endpoints. Cached
+      responses retain the original call's cost, latency, and request ID in trajectory totals even
+      though the current run made no paid request.
+    required_change: >
+      Use atomic temporary writes plus an interprocess-safe claim/lock protocol, validate cache
+      checksums, and include all response-affecting provider/generation provenance in the key.
+      Separate historical attributable usage from incremental run cost and identify cache hits in
+      the ledger.
+    acceptance_test: >
+      Stress multiple processes reading and writing the same key while injecting process death
+      between write and rename; no reader may see invalid JSON. Changing an OpenAI-compatible
+      endpoint or generation configuration must miss the cache. A cache-hit run must report zero
+      incremental provider cost while retaining separately labeled attributable token usage.
+
+  - id: TECH-008
+    severity: Medium
+    title: Reports omit required operational denominators and mislabel trajectories as scenarios
+    evidence:
+      - path: src/human_formation_benchmark/models.py
+        lines: 177-203
+      - path: src/human_formation_benchmark/models.py
+        lines: 258-295
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 52-136
+    why_it_matters: >
+      Provider usage is discarded when a trajectory is built, so manifests and reports cannot show
+      token usage or reconcile cost. The report model lacks domains, unique scenario count, latency,
+      retry/cache data, error denominators, judge sensitivity, lens sensitivity, and conflicts of
+      interest. benchmark-card.json assigns trajectory sample_count to scenario_count, which
+      overstates scenario coverage whenever policies or seeds repeat each scenario.
+    required_change: >
+      Preserve call-level usage and operational provenance, then report unique scenarios separately
+      from trajectories and calls. Add the required domain, latency, retry, cache, error, agreement,
+      judge/lens sensitivity, limitation, conflict, version, and commit fields with explicit
+      missingness rather than silently omitting unsupported analyses.
+    acceptance_test: >
+      Generate a run with two scenarios, three policies, two seeds, one cache hit, one retry, and one
+      failure. Assert scenario_count is 2, trajectory/call denominators are distinct, token and cost
+      totals reconcile to the ledger, errors and cache/retry counts are visible, and unsupported
+      sensitivity fields are explicitly unavailable in JSON, Markdown, and HTML.
+
+  - id: TECH-009
+    severity: Medium
+    title: Private extension packs can be validated but cannot be selected for a benchmark run
+    evidence:
+      - path: src/human_formation_benchmark/config.py
+        lines: 87-90
+      - path: src/human_formation_benchmark/pack.py
+        lines: 14-47
+      - path: src/human_formation_benchmark/cli.py
+        lines: 268-305
+      - path: docs/methodology/SCENARIO_TAXONOMY.md
+        lines: 21-24
+    why_it_matters: >
+      Run always loads data/public_core/scenarios.yaml and exposes no pack argument. HFB_HOME replaces
+      the entire resource root rather than adding a held-out pack, requiring private evaluators to
+      clone the whole public asset layout. validate_pack also requires approved_for_public_core and
+      build_manifest hard-codes a canonical, human-approved public pack, which is false metadata for
+      a private extension. The advertised private held-out evaluation path is therefore not an
+      end-to-end feature.
+    required_change: >
+      Add an explicit contained --pack path or pack registry to plan, run, resume, shard, and Inspect
+      integration. Distinguish public-core approval from private-pack validation and record only a
+      private pack ID/version/hash in shareable artifacts unless disclosure is explicitly requested.
+    acceptance_test: >
+      From an installed wheel, run a minimal private pack outside HFB_HOME alongside packaged
+      profiles, policies, and rubrics. Assert plan/run/resume/shard/merge use its exact hash, private
+      text never appears in logs or public summary artifacts, public-core approval is not falsely
+      asserted, and path traversal or symlink escape is rejected.
+
+  - id: TECH-010
+    severity: Low
+    title: The review packet's formatting claim is not reproducible at the reviewed commit
+    evidence:
+      - path: reviews/REVIEW_PACKET.md
+        lines: 32-43
+      - path: scripts/check_dependency_exceptions.py
+        lines: 14-18
+    why_it_matters: >
+      In an isolated archive of eecf202, uv run ruff format --check . reports that
+      scripts/check_dependency_exceptions.py would be reformatted. Ruff lint, strict mypy, and pytest
+      pass, with 49 passed and one live test skipped. A review packet that says the formatting check
+      passed when it does not weakens confidence in all recorded baseline evidence.
+    required_change: >
+      Format the file and generate the verification section from captured commands or CI artifacts
+      tied to the exact reviewed commit.
+    acceptance_test: >
+      In a clean archive or clone of the remediation commit, run the four AGENTS.md commands exactly;
+      all must exit zero, and the review packet must link or record results for that same full SHA.
+
+non_blocking_reservations:
+  - >
+    anyio, httpx, and tenacity are direct runtime dependencies but are not imported by the package at
+    eecf202. Remove unused direct dependencies or justify them when the corresponding implementation
+    lands; PyArrow should also be evaluated as an optional export extra because it is a large
+    mandatory install for users who only need JSONL.
+  - >
+    Message timestamps and UUID-based run IDs make byte-for-byte fake-provider artifacts differ
+    across deterministic runs. That can be acceptable, but deterministic mode is currently unused
+    and should have documented semantics plus tests that distinguish stable scientific results from
+    intentionally variable operational metadata.
