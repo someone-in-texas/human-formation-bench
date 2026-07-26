@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hfb-shard-0
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: hfb
+          image: python:3.12-slim
+          workingDir: /workspace
+          command: ["/bin/sh", "-lc"]
+          args:
+            - >-
+              pip install uv &&
+              uv sync --frozen &&
+              uv run hfb run --profile research --model "$HFB_MODEL"
+              --budget-usd "$HFB_BUDGET_USD" --input-cost "$HFB_INPUT_COST"
+              --output-cost "$HFB_OUTPUT_COST" --shards 20 --shard-index 0 --hard-stop
+          env:
+            - {name: HFB_MODEL, value: "provider/model"}
+            - {name: HFB_BUDGET_USD, value: "125"}
+            - {name: HFB_INPUT_COST, value: "REPLACE_WITH_CURRENT_PRICE"}
+            - {name: HFB_OUTPUT_COST, value: "REPLACE_WITH_CURRENT_PRICE"}
+          volumeMounts:
+            - {name: workspace, mountPath: /workspace}
+      volumes:
+        - name: workspace
+          persistentVolumeClaim: {claimName: hfb-workspace}

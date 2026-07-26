@@ -1,0 +1,16 @@
+name: HFB small example
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+      - run: uv sync --frozen
+      - run: uv run hfb run --profile micro --model fake/formation-v1 --budget-usd 5 --hard-stop
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hfb-run
+          path: runs/

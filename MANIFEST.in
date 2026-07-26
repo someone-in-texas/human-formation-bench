@@ -1,0 +1,5 @@
+include README.md LICENSE LICENSE-DATA NOTICE
+recursive-include configs *.yaml
+recursive-include data *.yaml *.json
+recursive-include rubrics *.yaml
+recursive-include schemas *.json
