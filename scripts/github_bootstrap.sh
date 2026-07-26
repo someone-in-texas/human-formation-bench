@@ -12,10 +12,13 @@ gh repo edit "$FULL_REPO" \
   --enable-discussions \
   --enable-projects=false \
   --enable-wiki=false \
+  --enable-secret-scanning \
+  --enable-secret-scanning-push-protection \
+  --allow-update-branch \
   --delete-branch-on-merge \
-  --allow-squash-merging \
-  --allow-merge-commit=false \
-  --allow-rebase-merging
+  --enable-squash-merge \
+  --enable-merge-commit=false \
+  --enable-rebase-merge
 
 gh api --method PUT -H "Accept: application/vnd.github+json" "/repos/$FULL_REPO/topics" \
   -f names[]='ai-evaluation' \
