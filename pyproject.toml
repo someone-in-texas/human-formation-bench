@@ -1,0 +1,165 @@
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm>=9"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "human-formation-benchmark"
+dynamic = ["version"]
+description = "A research-grounded benchmark for how AI interactions may shape human agency, truthfulness, relationships, humility, and flourishing."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Human Formation Benchmark contributors" }]
+keywords = ["ai-evaluation", "ai-alignment", "psychometrics", "human-ai-interaction", "inspect-ai"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "anyio>=4.8",
+  "duckdb>=1.2",
+  "httpx>=0.28",
+  "inspect-ai>=0.3.246",
+  "jinja2>=3.1",
+  "platformdirs>=4.3",
+  "pyarrow>=19",
+  "pydantic>=2.10",
+  "pyyaml>=6.0",
+  "rich>=13.9",
+  "tenacity>=9.0",
+  "typer>=0.15",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "coverage[toml]>=7.6",
+  "hypothesis>=6.125",
+  "mkdocs-material>=9.6",
+  "mypy>=1.15",
+  "pip-audit>=2.8",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.25",
+  "pytest-cov>=6.0",
+  "ruff>=0.11",
+  "types-pyyaml>=6.0",
+]
+release = [
+  "cyclonedx-bom>=6.1",
+]
+providers = [
+  "anthropic>=0.70",
+  "google-genai>=1.40",
+  "openai>=2.0",
+]
+
+[project.scripts]
+hfb = "human_formation_benchmark.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/someone-in-texas/human-formation-bench"
+Documentation = "https://someone-in-texas.github.io/human-formation-bench/"
+Issues = "https://github.com/someone-in-texas/human-formation-bench/issues"
+Source = "https://github.com/someone-in-texas/human-formation-bench"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+human_formation_benchmark = ["resources/**/*.yaml", "resources/**/*.json", "resources/**/*.j2"]
+
+[tool.setuptools.data-files]
+"share/human-formation-benchmark/configs/profiles" = [
+  "configs/profiles/frontier_audit.yaml",
+  "configs/profiles/micro.yaml",
+  "configs/profiles/research.yaml",
+  "configs/profiles/small.yaml",
+  "configs/profiles/standard.yaml",
+]
+"share/human-formation-benchmark/configs/policies" = ["configs/policies/policies.yaml"]
+"share/human-formation-benchmark/configs/constitutions" = ["configs/constitutions/constitutions.yaml"]
+"share/human-formation-benchmark/configs/judges" = ["configs/judges/deterministic.yaml"]
+"share/human-formation-benchmark/configs" = ["configs/prices.yaml"]
+"share/human-formation-benchmark/data/public_core" = [
+  "data/public_core/manifest.yaml",
+  "data/public_core/scenarios.yaml",
+]
+"share/human-formation-benchmark/data/controls" = ["data/controls/known_groups.yaml"]
+"share/human-formation-benchmark/data/fixtures" = ["data/fixtures/golden_transcript.json"]
+"share/human-formation-benchmark/rubrics" = ["rubrics/core.yaml"]
+"share/human-formation-benchmark/docs/research" = ["docs/research/SOURCE_REGISTRY.yaml"]
+
+[tool.setuptools_scm]
+fallback_version = "0.1.0.dev0"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+  "build>=1.2",
+  "coverage[toml]>=7.6",
+  "hypothesis>=6.125",
+  "mkdocs-material>=9.6",
+  "mypy>=1.15",
+  "pip-audit>=2.8",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.25",
+  "pytest-cov>=6.0",
+  "ruff>=0.11",
+  "types-pyyaml>=6.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "integration: end-to-end tests",
+  "live: opt-in tests that may call paid providers",
+  "security: security regression tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["human_formation_benchmark"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+"src/human_formation_benchmark/reporting.py" = ["E501"]
+"scripts/*.py" = ["S603", "S607"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["human_formation_benchmark"]
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+ignore_missing_imports = true

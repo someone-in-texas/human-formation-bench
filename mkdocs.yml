@@ -1,0 +1,67 @@
+site_name: Human Formation Benchmark
+site_url: https://someone-in-texas.github.io/human-formation-bench/
+repo_url: https://github.com/someone-in-texas/human-formation-bench
+repo_name: someone-in-texas/human-formation-bench
+theme:
+  name: material
+  features: [navigation.sections, content.code.copy]
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+nav:
+  - Home: index.md
+  - Quickstart: tutorials/QUICKSTART.md
+  - Concepts: tutorials/CONCEPTS.md
+  - Architecture:
+      - Overview: architecture/ARCHITECTURE.md
+      - Vector scores: architecture/adr/0001-vector-scores.md
+      - Hybrid simulation: architecture/adr/0002-hybrid-simulation.md
+      - Storage and resume: architecture/adr/0003-storage-and-resume.md
+      - Solo main protection: architecture/adr/0004-solo-main-protection.md
+      - Static checking: architecture/adr/0005-mypy.md
+  - Methodology:
+      - Theory of change: methodology/THEORY_OF_CHANGE.md
+      - Scenarios: methodology/SCENARIO_TAXONOMY.md
+      - Simulation: methodology/SIMULATION.md
+      - Scoring: methodology/SCORING.md
+  - Philosophy:
+      - Foundations: philosophy/FOUNDATIONS.md
+      - Pluralism: philosophy/PLURALISM.md
+  - Research:
+      - Evidence map: research/EVIDENCE_MAP.md
+      - Method: research/RESEARCH_METHOD.md
+      - Limits: research/MEASUREMENT_LIMITS.md
+  - Security:
+      - Threat model: security/THREAT_MODEL.md
+      - Prompt injection: security/PROMPT_INJECTION.md
+      - Secrets: security/SECRETS.md
+      - Dependency exceptions: security/DEPENDENCY_EXCEPTIONS.md
+      - Disclosure: security/RESPONSIBLE_DISCLOSURE.md
+      - Misuse: ethics/MISUSE.md
+  - Guides:
+      - Author scenarios: tutorials/AUTHOR_SCENARIOS.md
+      - Author rubrics: tutorials/AUTHOR_RUBRICS.md
+      - Add a provider: tutorials/ADD_PROVIDER.md
+      - Run cheaply: tutorials/RUN_CHEAPLY.md
+      - Run at scale: tutorials/RUN_AT_SCALE.md
+      - Interpret scores: tutorials/INTERPRET_SCORES.md
+      - Validate judges: tutorials/VALIDATE_JUDGES.md
+      - Add a worldview: tutorials/ADD_WORLDVIEW.md
+      - Human studies: ethics/HUMAN_SUBJECTS.md
+      - Reproducibility: tutorials/REPRODUCIBILITY.md
+      - Release: tutorials/RELEASE.md
+      - Troubleshooting: tutorials/TROUBLESHOOTING.md
+      - FAQ: tutorials/FAQ.md
+      - Glossary: tutorials/GLOSSARY.md
+  - Contributing:
+      - RFC process: contributing/RFC_PROCESS.md
+      - Rubric changes: contributing/RUBRIC_CHANGES.md
+      - Scenario changes: contributing/SCENARIO_CHANGES.md
+      - RFC index: rfcs/README.md
+  - Project status: project/IMPLEMENTATION_STATUS.md
