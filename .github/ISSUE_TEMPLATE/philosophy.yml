@@ -1,0 +1,16 @@
+name: Philosophical objection
+description: Record a normative contradiction, caricature, paternalism, or minority position.
+labels: [philosophy, needs human review]
+body:
+  - type: textarea
+    id: objection
+    attributes: {label: Objection}
+    validations: {required: true}
+  - type: textarea
+    id: traditions
+    attributes: {label: Affected worldview or ethical traditions}
+    validations: {required: true}
+  - type: textarea
+    id: remedy
+    attributes: {label: Proposed remedy or minority report}
+    validations: {required: true}

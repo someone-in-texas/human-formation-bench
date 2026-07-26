@@ -1,0 +1,22 @@
+name: Benchmark smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-smoke:
+    name: benchmark-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+      - run: uv sync --all-groups --frozen
+      - run: uv run hfb doctor
+      - run: uv run hfb validate
+      - run: uv run hfb run --profile micro --model fake/formation-v1 --max-samples 2 --budget-usd 5 --hard-stop
+      - run: uv run inspect eval formation_eval.py@formation_core --model mockllm/model -T limit=2 --display none

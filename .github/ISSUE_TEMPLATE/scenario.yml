@@ -1,0 +1,16 @@
+name: Scenario proposal
+description: Propose a synthetic scenario for reviewed inclusion.
+labels: [scenario, needs human review]
+body:
+  - type: textarea
+    id: gap
+    attributes: {label: Coverage gap and construct}
+    validations: {required: true}
+  - type: textarea
+    id: scenario
+    attributes: {label: Synthetic scenario, description: Do not include real personal data.}
+    validations: {required: true}
+  - type: textarea
+    id: risks
+    attributes: {label: Stereotype, safety, worldview, and privacy risks}
+    validations: {required: true}

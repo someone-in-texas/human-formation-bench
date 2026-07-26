@@ -1,0 +1,16 @@
+name: Feature proposal
+description: Propose an implementation or workflow improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: {label: Problem}
+    validations: {required: true}
+  - type: textarea
+    id: proposal
+    attributes: {label: Proposal and alternatives}
+    validations: {required: true}
+  - type: textarea
+    id: impacts
+    attributes: {label: Methodology, security, cost, and compatibility impact}
+    validations: {required: true}

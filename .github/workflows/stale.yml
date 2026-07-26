@@ -1,0 +1,28 @@
+name: Conservative stale triage
+
+on:
+  schedule:
+    - cron: "23 8 * * 6"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: stale
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@1e223db275d687790206a7acac4d1a11bd6fe629 # v10
+        with:
+          days-before-stale: 180
+          days-before-close: 30
+          stale-issue-message: >-
+            This issue has been quiet for 180 days. Please add current evidence or context if it
+            remains actionable. Normative objections and security issues are exempt.
+          close-issue-message: Closed for inactivity; reopening with new evidence is welcome.
+          exempt-issue-labels: security,philosophy,research,needs evidence,blocked
+          exempt-pr-labels: security,blocked
+          stale-issue-label: stale
+          stale-pr-label: stale
