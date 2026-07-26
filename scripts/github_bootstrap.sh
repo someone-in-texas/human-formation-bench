@@ -54,6 +54,9 @@ labels=(
   "needs evidence:d4c5f9"
   "needs human review:f9d0c4"
   "dependencies:0366d6"
+  "review finding:6f42c1"
+  "priority: high:b60205"
+  "priority: medium:fbca04"
   "stale:ededed"
 )
 for item in "${labels[@]}"; do
@@ -62,4 +65,11 @@ for item in "${labels[@]}"; do
   gh label create "$name" --repo "$FULL_REPO" --color "$color" --force >/dev/null
 done
 
-printf 'Configured %s. Rulesets are intentionally applied after stable checks complete once.\n' "$FULL_REPO"
+for ruleset in .github/rulesets/*.json; do
+  ruleset_name="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[\"name\"])' "$ruleset")"
+  if ! gh api "/repos/$FULL_REPO/rulesets" --jq "any(.name == \"$ruleset_name\")" | grep -qx true; then
+    gh api --method POST "/repos/$FULL_REPO/rulesets" --input "$ruleset" >/dev/null
+  fi
+done
+
+printf 'Configured %s, including active branch and release-tag rulesets.\n' "$FULL_REPO"

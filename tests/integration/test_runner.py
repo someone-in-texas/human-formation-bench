@@ -4,7 +4,9 @@ from pathlib import Path
 
 import pytest
 import yaml
+from typer.testing import CliRunner
 
+from human_formation_benchmark.cli import app
 from human_formation_benchmark.config import load_scenarios
 from human_formation_benchmark.models import TrajectoryLength
 from human_formation_benchmark.runner import RunOptions, merge_shards, run_benchmark
@@ -84,8 +86,35 @@ async def test_shard_merge_rejects_truncated_completed_results(tmp_path: Path) -
     results = shard_dirs[0] / "results.jsonl"
     lines = results.read_text(encoding="utf-8").splitlines()
     results.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="result count"):
+    with pytest.raises(ValueError, match="ledger"):
         merge_shards(tmp_path / "must-not-merge", shard_dirs)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_shard_merge_rejects_content_modified_results(tmp_path: Path) -> None:
+    shard_dirs = []
+    for index in range(2):
+        shard_dirs.append(
+            await run_benchmark(
+                RunOptions(
+                    max_samples=4,
+                    output_root=tmp_path / f"runs-tampered-{index}",
+                    cache_root=tmp_path / "cache",
+                    shards=2,
+                    shard_index=index,
+                )
+            )
+        )
+    results = shard_dirs[0] / "results.jsonl"
+    records = [json.loads(line) for line in results.read_text(encoding="utf-8").splitlines()]
+    records[0]["judge_results"][0]["confidence"] = 0.01
+    results.write_text(
+        "\n".join(json.dumps(record, separators=(",", ":")) for record in records) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="content hash mismatch"):
+        merge_shards(tmp_path / "must-not-merge-tampered", shard_dirs)
 
 
 @pytest.mark.integration
@@ -112,7 +141,7 @@ def smoke_run(tmp_path: Path) -> Path:
 async def test_private_pack_is_hash_only_and_transcript_free(tmp_path: Path) -> None:
     scenario = load_scenarios()[0].model_copy(
         update={
-            "id": "private.synthetic.001",
+            "id": "private.scenario-id-sentinel.001",
             "approved_for_public_core": False,
             "user_opening": "PRIVATE HELD OUT SENTINEL: choose a bounded next action.",
         }
@@ -122,7 +151,7 @@ async def test_private_pack_is_hash_only_and_transcript_free(tmp_path: Path) -> 
         yaml.safe_dump(
             {
                 "schema_version": "1.0",
-                "pack_id": "private-synthetic",
+                "pack_id": "private-pack-id-sentinel",
                 "pack_version": "0.0.1",
                 "scenarios": [scenario.model_dump(mode="json")],
             }
@@ -138,18 +167,34 @@ async def test_private_pack_is_hash_only_and_transcript_free(tmp_path: Path) -> 
         )
     )
     manifest = RunStore(run_dir).load_manifest()
-    assert manifest.scenario_pack_id == "private-synthetic"
+    assert manifest.scenario_pack_id.startswith("private-pack-")
+    assert manifest.scenario_pack_id != "private-pack-id-sentinel"
     assert not manifest.scenario_pack_canonical
     assert manifest.scenario_pack_disclosure == "private"
     persisted = (run_dir / "results.jsonl").read_text(encoding="utf-8")
     assert "content withheld for private pack" in persisted
-    sentinel = b"PRIVATE HELD OUT SENTINEL"
-    assert all(sentinel not in path.read_bytes() for path in run_dir.rglob("*") if path.is_file())
+    export_dir = tmp_path / "private-export"
+    result = CliRunner().invoke(
+        app,
+        ["export", str(run_dir), "--destination", str(export_dir)],
+    )
+    assert result.exit_code == 0, result.output
+    sentinels = (
+        b"PRIVATE HELD OUT SENTINEL",
+        b"private-pack-id-sentinel",
+        b"private.scenario-id-sentinel.001",
+    )
+    artifacts = [
+        path for root in (run_dir, export_dir) for path in root.rglob("*") if path.is_file()
+    ]
+    assert all(sentinel not in path.read_bytes() for sentinel in sentinels for path in artifacts)
     assert not (tmp_path / "shared-cache-must-not-be-used").exists()
     assert not (run_dir / "private-cache").exists()
     if os.name == "posix":
-        assert run_dir.stat().st_mode & 0o777 == 0o700
-        assert (run_dir / "results.jsonl").stat().st_mode & 0o777 == 0o600
+        for root in (run_dir, export_dir):
+            assert root.stat().st_mode & 0o777 == 0o700
+            for path in root.rglob("*"):
+                assert path.stat().st_mode & 0o777 == (0o700 if path.is_dir() else 0o600)
 
 
 @pytest.mark.integration
@@ -238,7 +283,8 @@ async def test_declared_long_horizon_catches_delayed_sleeper(
         any(
             hit.gate == "human_veto_bypass"
             and hit.policy_id == "sleeper_eval_control"
-            and hit.scenario_id == scenario.id
+            and hit.scenario_id.startswith("private-scenario-")
+            and hit.scenario_id != scenario.id
             and hit.message_index >= 7
             and "route around the veto" not in hit.quote
             and "evidence withheld" in hit.quote

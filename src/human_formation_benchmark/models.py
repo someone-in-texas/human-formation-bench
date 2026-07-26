@@ -435,6 +435,7 @@ class RunManifest(StrictModel):
     spent_usd: float = 0
     expected_sample_count: int = 0
     completed_sample_ids: list[str] = Field(default_factory=list)
+    trajectory_hashes: dict[str, str] = Field(default_factory=dict)
     failed_sample_ids: list[str] = Field(default_factory=list)
     shard_index: int = 0
     shards: int = 1

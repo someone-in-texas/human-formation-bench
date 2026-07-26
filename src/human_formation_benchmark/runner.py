@@ -34,7 +34,7 @@ from .pricing import BudgetExceeded, BudgetGuard, token_cost
 from .providers import FakeProvider, InspectProvider, Provider
 from .reporting import render_reports
 from .scoring import aggregate, detect_failure_gates, deterministic_score, failure_gate_matches
-from .security import redact
+from .security import protect_artifact_tree, redact
 from .simulation import transition
 from .storage import ContentCache, RunStore
 
@@ -215,7 +215,11 @@ def _manifest(
         policies=policies,
         seeds=seeds,
         scenario_pack_hash=pack_manifest.content_hash,
-        scenario_pack_id=pack_manifest.pack_id,
+        scenario_pack_id=(
+            _opaque_identifier("private-pack", pack_manifest.pack_id)
+            if pack_manifest.disclosure == "private"
+            else pack_manifest.pack_id
+        ),
         scenario_pack_canonical=pack_manifest.canonical,
         scenario_pack_disclosure=pack_manifest.disclosure,
         benchmark_exposure=options.benchmark_exposure,
@@ -245,6 +249,39 @@ def _manifest(
     )
 
 
+def _opaque_identifier(kind: str, value: str) -> str:
+    digest = content_hash(value).removeprefix("sha256:")
+    return f"{kind}-{digest[:16]}"
+
+
+def _persisted_trajectory_id(
+    scenario_id: str, policy_id: str, seed: int, *, private_pack: bool
+) -> str:
+    raw = f"{scenario_id}--{policy_id}--{seed}"
+    return _opaque_identifier("private-sample", raw) if private_pack else raw
+
+
+def _trajectory_digest(trajectory: Trajectory) -> str:
+    return content_hash(trajectory.model_dump(mode="json"))
+
+
+def _verify_trajectory_ledger(store: RunStore, manifest: RunManifest) -> set[str]:
+    """Stream persisted records and fail closed on deletion, duplication, or modification."""
+
+    seen: set[str] = set()
+    for trajectory in store.iter_trajectories():
+        if trajectory.id in seen:
+            raise ValueError(f"duplicate persisted trajectory ID: {trajectory.id}")
+        seen.add(trajectory.id)
+        if manifest.trajectory_hashes.get(trajectory.id) != _trajectory_digest(trajectory):
+            raise ValueError(f"trajectory content hash mismatch: {trajectory.id}")
+    if seen != set(manifest.completed_sample_ids):
+        raise ValueError("completed sample ledger does not match persisted trajectory IDs")
+    if seen != set(manifest.trajectory_hashes):
+        raise ValueError("trajectory hash ledger does not match persisted trajectory IDs")
+    return seen
+
+
 def _persistence_safe(trajectory: Trajectory, *, private_pack: bool) -> Trajectory:
     """Redact persistence while preserving in-memory scoring semantics."""
 
@@ -272,25 +309,38 @@ def _persistence_safe(trajectory: Trajectory, *, private_pack: bool) -> Trajecto
         )
         for result in trajectory.judge_results
     ]
-    gate_hits = [
-        hit.model_copy(
-            update={
-                "quote": "[evidence withheld for private pack]"
-                if private_pack
-                else redact(hit.quote)
-            }
-        )
-        for hit in trajectory.gate_hits
-    ]
-    return trajectory.model_copy(
-        update={"messages": messages, "judge_results": results, "gate_hits": gate_hits}
+    scenario_id = (
+        _opaque_identifier("private-scenario", trajectory.scenario_id)
+        if private_pack
+        else trajectory.scenario_id
     )
-
-
-def _analysis_compact(trajectory: Trajectory) -> Trajectory:
-    """Drop transcript bodies after persistence; reports use scores and attributed gates."""
-
-    return trajectory.model_copy(update={"messages": []})
+    trajectory_id = (
+        _opaque_identifier("private-sample", trajectory.id) if private_pack else trajectory.id
+    )
+    gate_hits = []
+    for hit in trajectory.gate_hits:
+        gate_hits.append(
+            hit.model_copy(
+                update={
+                    "trajectory_id": trajectory_id,
+                    "scenario_id": scenario_id,
+                    "quote": (
+                        "[evidence withheld for private pack]"
+                        if private_pack
+                        else redact(hit.quote)
+                    ),
+                }
+            )
+        )
+    return trajectory.model_copy(
+        update={
+            "id": trajectory_id,
+            "scenario_id": scenario_id,
+            "messages": messages,
+            "judge_results": results,
+            "gate_hits": gate_hits,
+        }
+    )
 
 
 class _Pacer:
@@ -454,6 +504,7 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
     store = RunStore(run_dir)
     if resume_dir:
         manifest = store.load_manifest()
+        completed = _verify_trajectory_ledger(store, manifest)
         if manifest.status == "completed":
             return run_dir
         if manifest.model != options.model or manifest.profile != options.profile:
@@ -474,7 +525,9 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
         persisted_payload = dict(resolved_payload)
         if manifest.scenario_pack_disclosure == "private":
             persisted_payload["scenarios"] = {
-                "ids": [scenario.id for scenario in scenarios],
+                "ids": [
+                    _opaque_identifier("private-scenario", scenario.id) for scenario in scenarios
+                ],
                 "count": len(scenarios),
                 "content_hash": manifest.scenario_pack_hash,
                 "text_withheld": True,
@@ -483,10 +536,21 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             manifest,
             {
                 **persisted_payload,
-                "scenario_ids": [scenario.id for scenario in scenarios],
-                "pack_path": str(options.pack_path) if options.pack_path else None,
+                "scenario_ids": (
+                    [_opaque_identifier("private-scenario", scenario.id) for scenario in scenarios]
+                    if manifest.scenario_pack_disclosure == "private"
+                    else [scenario.id for scenario in scenarios]
+                ),
+                "pack_path": (
+                    "[private pack path withheld]"
+                    if manifest.scenario_pack_disclosure == "private"
+                    else str(options.pack_path)
+                    if options.pack_path
+                    else None
+                ),
             },
         )
+        completed = set()
     current_config_hash = content_hash(
         _configuration_payload(options, profile, scenarios, policies, price)
     )
@@ -494,11 +558,6 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
         raise ValueError(
             "resume input hash mismatch: profile, pack, policy, rubric, judge, or price changed"
         )
-    completed = set(manifest.completed_sample_ids)
-    existing = {
-        trajectory.id: _analysis_compact(trajectory) for trajectory in store.iter_trajectories()
-    }
-    completed.update(existing)
     private_pack = manifest.scenario_pack_disclosure == "private"
     cache_root = options.cache_root or user_cache_path("hfb") / "responses"
     cache = ContentCache(cache_root, enabled=not private_pack)
@@ -516,7 +575,9 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
     async def execute(scenario: Scenario, policy_id: str, seed: int) -> None:
         nonlocal manifest
         async with semaphore:
-            trajectory_id = f"{scenario.id}--{policy_id}--{seed}"
+            trajectory_id = _persisted_trajectory_id(
+                scenario.id, policy_id, seed, private_pack=private_pack
+            )
             try:
                 trajectory = await _trajectory(
                     scenario,
@@ -539,8 +600,8 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                     private_pack=manifest.scenario_pack_disclosure == "private",
                 )
                 await store.append(safe_trajectory)
-                existing[trajectory.id] = _analysis_compact(safe_trajectory)
-                manifest.completed_sample_ids.append(trajectory_id)
+                manifest.completed_sample_ids.append(safe_trajectory.id)
+                manifest.trajectory_hashes[safe_trajectory.id] = _trajectory_digest(safe_trajectory)
             except BudgetExceeded as error:
                 manifest.status = "budget_exhausted"
                 manifest.errors.append(str(error))
@@ -555,7 +616,9 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
         for scenario in scenarios:
             for policy_id in policies:
                 for seed in profile.seeds:
-                    trajectory_id = f"{scenario.id}--{policy_id}--{seed}"
+                    trajectory_id = _persisted_trajectory_id(
+                        scenario.id, policy_id, seed, private_pack=private_pack
+                    )
                     if trajectory_id not in completed:
                         await queue.put((scenario, policy_id, seed))
         for _ in range(profile.concurrency):
@@ -580,14 +643,13 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
         manifest.updated_at = datetime.now(UTC)
         store.update_manifest(manifest)
         raise
-    trajectories = list(existing.values())
     if manifest.status != "budget_exhausted":
         manifest.status = "completed" if not manifest.failed_sample_ids else "failed"
     manifest.spent_usd = guard.spent
     manifest.updated_at = datetime.now(UTC)
     store.update_manifest(manifest)
     report = aggregate(
-        trajectories,
+        store.iter_trajectories(),
         assurance=profile.assurance,
         configured_judges=options.judge_models,
         target_model=options.model,
@@ -602,33 +664,32 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                 ],
             }
         )
-    render_reports(run_dir, manifest, report, trajectories)
-    store.export_columnar(trajectories)
+    render_reports(run_dir, manifest, report, store.iter_trajectories())
+    store.export_columnar(store.iter_trajectories())
+    protect_artifact_tree(run_dir)
     return run_dir
 
 
 def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=False)
-    trajectories: dict[str, Trajectory] = {}
     manifests = []
+    trajectory_ids: set[str] = set()
+    trajectory_hashes: dict[str, str] = {}
     for shard_dir in shard_dirs:
         shard_store = RunStore(shard_dir)
         manifest = shard_store.load_manifest()
         manifests.append(manifest)
-        shard_trajectories = shard_store.trajectories()
-        trajectory_ids = {trajectory.id for trajectory in shard_trajectories}
-        if len(shard_trajectories) != manifest.expected_sample_count:
+        shard_trajectory_ids = _verify_trajectory_ledger(shard_store, manifest)
+        if len(shard_trajectory_ids) != manifest.expected_sample_count:
             raise ValueError(
                 "completed shard result count does not match its expected sample count"
             )
-        if trajectory_ids != set(manifest.completed_sample_ids):
-            raise ValueError("completed shard ledger does not match persisted trajectory IDs")
         if manifest.failed_sample_ids:
             raise ValueError("completed shard contains failed sample IDs")
-        for trajectory in shard_trajectories:
-            if trajectory.id in trajectories:
-                raise ValueError(f"duplicate trajectory across shards: {trajectory.id}")
-            trajectories[trajectory.id] = trajectory
+        duplicates = trajectory_ids.intersection(shard_trajectory_ids)
+        if duplicates:
+            raise ValueError(f"duplicate trajectory across shards: {sorted(duplicates)[0]}")
+        trajectory_ids.update(shard_trajectory_ids)
+        trajectory_hashes.update(manifest.trajectory_hashes)
     base = manifests[0]
     if len(manifests) != base.shards:
         raise ValueError(f"expected {base.shards} shards, received {len(manifests)}")
@@ -662,21 +723,33 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
             "shards": base.shards,
             "spent_usd": sum(manifest.spent_usd for manifest in manifests),
             "expected_sample_count": sum(manifest.expected_sample_count for manifest in manifests),
-            "completed_sample_ids": sorted(trajectories),
+            "completed_sample_ids": sorted(trajectory_ids),
+            "trajectory_hashes": trajectory_hashes,
             "updated_at": datetime.now(UTC),
         }
     )
     store = RunStore(output_dir)
-    store.create(merged, {"merged_from": [str(path) for path in shard_dirs]})
-    output_lines = "\n".join(item.model_dump_json() for item in trajectories.values())
-    (output_dir / "results.jsonl").write_text(output_lines + "\n", encoding="utf-8")
-    values = list(trajectories.values())
+    store.create(
+        merged,
+        {
+            "merged_from": (
+                [_opaque_identifier("private-shard", str(path.resolve())) for path in shard_dirs]
+                if merged.scenario_pack_disclosure == "private"
+                else [str(path) for path in shard_dirs]
+            )
+        },
+    )
+    with store.results_path.open("w", encoding="utf-8") as output:
+        for shard_dir in shard_dirs:
+            for trajectory in RunStore(shard_dir).iter_trajectories():
+                output.write(trajectory.model_dump_json() + "\n")
     report = aggregate(
-        values,
+        store.iter_trajectories(),
         assurance="research",
         configured_judges=merged.judge_models,
         target_model=merged.model,
     )
-    render_reports(output_dir, merged, report, values)
-    store.export_columnar(values)
+    render_reports(output_dir, merged, report, store.iter_trajectories())
+    store.export_columnar(store.iter_trajectories())
+    protect_artifact_tree(output_dir)
     return output_dir

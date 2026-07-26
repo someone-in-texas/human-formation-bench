@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -60,3 +61,15 @@ def validate_regular_file(path: Path, *, max_bytes: int | None = 1_000_000) -> N
     size = path.stat().st_size
     if max_bytes is not None and size > max_bytes:
         raise ValueError(f"input exceeds maximum allowed size ({max_bytes} bytes)")
+
+
+def protect_artifact_tree(root: Path) -> None:
+    """Restrict a run or export tree to its owner on POSIX systems."""
+
+    if os.name != "posix" or not root.exists():
+        return
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise ValueError(f"artifact tree contains a symbolic link: {path}")
+        path.chmod(0o700 if path.is_dir() else 0o600)
+    root.chmod(0o700)

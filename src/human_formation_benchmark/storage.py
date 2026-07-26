@@ -6,7 +6,8 @@ import asyncio
 import json
 import os
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
@@ -143,13 +144,14 @@ class RunStore:
     def trajectories(self) -> list[Trajectory]:
         return list(self.iter_trajectories())
 
-    def export_columnar(self, trajectories: list[Trajectory]) -> None:
+    def export_columnar(self, trajectories: Iterable[Trajectory]) -> None:
         trajectory_writer: pq.ParquetWriter | None = None
         score_writer: pq.ParquetWriter | None = None
-        for offset in range(0, len(trajectories), 1_000):
+        iterator = iter(trajectories)
+        while batch := list(islice(iterator, 1_000)):
             rows = []
             scores = []
-            for trajectory in trajectories[offset : offset + 1_000]:
+            for trajectory in batch:
                 rows.append(
                     {
                         "trajectory_id": trajectory.id,

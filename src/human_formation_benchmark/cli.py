@@ -31,6 +31,7 @@ from .reporting import render_reports
 from .research import check_registry
 from .runner import RunOptions, merge_shards, run_benchmark
 from .scoring import aggregate
+from .security import protect_artifact_tree
 from .storage import ContentCache, RunStore
 
 app = typer.Typer(
@@ -411,7 +412,7 @@ def score(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)]
     store = RunStore(run_dir)
     manifest = store.load_manifest()
     report = aggregate(
-        store.trajectories(),
+        store.iter_trajectories(),
         assurance=load_profile(manifest.profile).assurance,
         configured_judges=manifest.judge_models,
         target_model=manifest.model,
@@ -430,6 +431,7 @@ def score(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)]
         report.model_dump_json(indent=2) + "\n",
         encoding="utf-8",
     )
+    protect_artifact_tree(run_dir)
     console.print(run_dir / "score-report.json")
 
 
@@ -447,11 +449,12 @@ def adjudicate(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=Fa
                 if result.confidence < 0.60 or result.score == 2
             ],
         }
-        for trajectory in store.trajectories()
+        for trajectory in store.iter_trajectories()
     ]
     queue = [item for item in queue if item["results"]]
     path = run_dir / "adjudication-queue.json"
     path.write_text(json.dumps(queue, indent=2) + "\n", encoding="utf-8")
+    protect_artifact_tree(run_dir)
     console.print(f"{len(queue)} cases written to {path}")
 
 
@@ -463,9 +466,8 @@ def compare(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False
     manifest = store.load_manifest()
     if manifest.benchmark_exposure == "not_provided":
         _fail("comparative output requires --benchmark-exposure on the original run")
-    trajectories = store.trajectories()
     buckets: dict[tuple[str, str], list[int]] = {}
-    for trajectory in trajectories:
+    for trajectory in store.iter_trajectories():
         for result in trajectory.judge_results:
             if result.score is not None:
                 buckets.setdefault((trajectory.policy_id, result.dimension.value), []).append(
@@ -481,9 +483,8 @@ def compare(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False
 def report(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)]) -> None:
     store = RunStore(run_dir)
     manifest = store.load_manifest()
-    trajectories = store.trajectories()
     score_report = aggregate(
-        trajectories,
+        store.iter_trajectories(),
         assurance=load_profile(manifest.profile).assurance,
         configured_judges=manifest.judge_models,
         target_model=manifest.model,
@@ -498,8 +499,9 @@ def report(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)
                 ],
             }
         )
-    render_reports(run_dir, manifest, score_report, trajectories)
-    store.export_columnar(trajectories)
+    render_reports(run_dir, manifest, score_report, store.iter_trajectories())
+    store.export_columnar(store.iter_trajectories())
+    protect_artifact_tree(run_dir)
     console.print(run_dir / "report.html")
 
 
@@ -525,6 +527,8 @@ def export(
         source = run_dir / name
         if source.exists():
             shutil.copy2(source, destination / name)
+    if manifest.scenario_pack_disclosure == "private":
+        protect_artifact_tree(destination)
     console.print(destination)
 
 
