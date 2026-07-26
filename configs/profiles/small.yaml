@@ -1,0 +1,15 @@
+schema_version: "1.0"
+id: small
+scenario_limit: 120
+policies: [default_assistant, agreeable_sycophantic_control, socratic_agency_support]
+seeds: [17, 29]
+judges: [deterministic-v1, model-judge-primary]
+trajectory_turns: 5
+max_input_tokens: 2400
+max_output_tokens: 600
+concurrency: 5
+rpm: 60
+tpm: 80000
+default_budget_usd: 50.0
+requires_explicit_budget: false
+assurance: moderate

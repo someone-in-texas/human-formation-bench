@@ -1,0 +1,354 @@
+schema_version: "1.0"
+registry_version: "2026-07-25"
+access_policy: Primary sources are preferred. Preprints are labeled. Conceptual anchors do not license direct psychological inference from model text.
+defaults: &defaults
+  access_date: "2026-07-25"
+  limitations: [Transfer from human research to AI interaction policy is an interpretation requiring validation.]
+  does_not_establish: This source does not establish that text-only model judging measures a real user's inner state or long-term formation.
+sources:
+  - <<: *defaults
+    id: RYAN-DECI-2000
+    title: Self-Determination Theory and the Facilitation of Intrinsic Motivation, Social Development, and Well-Being
+    authors: [Richard M. Ryan, Edward L. Deci]
+    year: 2000
+    status: peer-reviewed journal article
+    doi: 10.1037/0003-066X.55.1.68
+    url: https://selfdeterminationtheory.org/SDT/documents/2000_RyanDeci_SDT.pdf
+    informs: [agency_support, competence_retention, human_relatedness]
+  - <<: *defaults
+    id: DECI-RYAN-2000
+    title: "The What and Why of Goal Pursuits: Human Needs and the Self-Determination of Behavior"
+    authors: [Edward L. Deci, Richard M. Ryan]
+    year: 2000
+    status: peer-reviewed journal article
+    doi: 10.1207/S15327965PLI1104_01
+    url: https://doi.org/10.1207/S15327965PLI1104_01
+    informs: [agency_support, autonomous_motivation, controlled_motivation]
+  - <<: *defaults
+    id: CHEN-NEEDS-2015
+    title: Basic psychological need satisfaction, need frustration, and need strength across four cultures
+    authors: [Beiwen Chen, Maarten Vansteenkiste, Wim Beyers, Edward L. Deci, Richard M. Ryan]
+    year: 2015
+    status: peer-reviewed journal article
+    doi: 10.1007/s11031-014-9450-1
+    url: https://doi.org/10.1007/s11031-014-9450-1
+    informs: [cross-cultural caution, autonomy, competence, relatedness]
+    limitations: [Four-country evidence is not proof of global measurement invariance.]
+  - <<: *defaults
+    id: LEARY-IH-2017
+    title: Cognitive and Interpersonal Features of Intellectual Humility
+    authors: [Mark R. Leary, Kate J. Diebels, Erin K. Davisson, Rick H. Hoyle]
+    year: 2017
+    status: peer-reviewed journal article
+    doi: 10.1177/0146167217697695
+    url: https://doi.org/10.1177/0146167217697695
+    informs: [intellectual_humility]
+  - <<: *defaults
+    id: DAVIS-EMPATHY-1983
+    title: "Measuring individual differences in empathy: Evidence for a multidimensional approach"
+    authors: [Mark H. Davis]
+    year: 1983
+    status: peer-reviewed journal article
+    doi: 10.1037/0022-3514.44.1.113
+    url: https://doi.org/10.1037/0022-3514.44.1.113
+    informs: [empathy_perspective_taking, multidimensionality]
+    limitations: [HFB does not reproduce the copyrighted instrument or claim construct equivalence.]
+  - <<: *defaults
+    id: RUSSELL-LONELINESS-1996
+    title: "UCLA Loneliness Scale Version 3: Reliability, Validity, and Factor Structure"
+    authors: [Daniel W. Russell]
+    year: 1996
+    status: peer-reviewed journal article
+    doi: 10.1207/s15327752jpa6601_2
+    url: https://doi.org/10.1207/s15327752jpa6601_2
+    informs: [human_relatedness, validation_reference]
+    limitations: [HFB does not reproduce the scale and does not infer loneliness from assistant text.]
+  - <<: *defaults
+    id: LEE-ROBBINS-1995
+    title: "Measuring belongingness: The Social Connectedness and the Social Assurance scales"
+    authors: [Richard M. Lee, Steven B. Robbins]
+    year: 1995
+    status: peer-reviewed journal article
+    doi: 10.1037/0022-0167.42.2.232
+    url: https://doi.org/10.1037/0022-0167.42.2.232
+    informs: [human_relatedness, social_connection]
+    limitations: [Interaction frequency is not treated as a substitute for connectedness.]
+  - <<: *defaults
+    id: BANDURA-SELF-EFFICACY-1995
+    title: Generalized Self-Efficacy Scale
+    authors: [Ralf Schwarzer, Matthias Jerusalem]
+    year: 1995
+    status: published scale chapter
+    doi: null
+    url: https://userpage.fu-berlin.de/~health/engscal.htm
+    informs: [competence_retention, self_efficacy_validation_reference]
+    limitations: [HFB uses the construct as an anchor and does not reproduce or score the instrument.]
+  - <<: *defaults
+    id: HONG-REACTANCE-1996
+    title: Refinement of the Hong Psychological Reactance Scale
+    authors: [Sung-Mook Hong, Salvatora Faedda]
+    year: 1996
+    status: peer-reviewed journal article
+    doi: 10.1177/0013164496056001014
+    url: https://doi.org/10.1177/0013164496056001014
+    informs: [consent_non_coercion, resistance_to_manipulation]
+  - <<: *defaults
+    id: GODDARD-AUTOMATION-2012
+    title: "Automation bias: a systematic review of frequency, effect mediators, and mitigators"
+    authors: [Kate Goddard, Abdul Roudsari, Jeremy C. Wyatt]
+    year: 2012
+    status: peer-reviewed systematic review
+    doi: 10.1136/amiajnl-2011-000089
+    url: https://doi.org/10.1136/amiajnl-2011-000089
+    informs: [automation_overreliance, competence_retention, human_standing_governance]
+    limitations: [Much of the evidence concerns decision support and healthcare, not generative assistants.]
+  - <<: *defaults
+    id: VASCONCELOS-OVERRELIANCE-2023
+    title: Explanations Can Reduce Overreliance on AI Systems During Decision-Making
+    authors: [Helena Vasconcelos, Matthew Jörke, Madeleine Grunde-McLaughlin, Tobias Gerstenberg, Michael Bernstein, Ranjay Krishna]
+    year: 2023
+    status: CHI conference paper and arXiv preprint
+    doi: 10.1145/3544548.3581001
+    url: https://arxiv.org/abs/2212.06823
+    informs: [competence_retention, verification, automation_overreliance]
+  - <<: *defaults
+    id: FANG-CHATBOT-USE-2025
+    title: "How AI and Human Behaviors Shape Psychosocial Effects of Extended Chatbot Use: A Longitudinal Randomized Controlled Study"
+    authors: [Cathy Mengying Fang, Auren R. Liu, Valdemar Danry, Eunhae Lee, Samantha W. T. Chan, Pat Pataranutaporn, Pattie Maes, Jason Phang, Michael Lampe, Lama Ahmad, Sandhini Agarwal]
+    year: 2025
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2503.17473
+    informs: [dependency_boundary_quality, human_relatedness, attention_wireheading_resistance]
+    limitations: [Effects were nuanced; high usage associations do not establish a simple causal story for all users or products.]
+  - <<: *defaults
+    id: PHANG-AFFECTIVE-USE-2025
+    title: Investigating Affective Use and Emotional Well-being on ChatGPT
+    authors: [Jason Phang, Michael Lampe, Lama Ahmad, Sandhini Agarwal, Cathy Mengying Fang, Auren R. Liu, Valdemar Danry, Eunhae Lee, Samantha W. T. Chan, Pat Pataranutaporn, Pattie Maes]
+    year: 2025
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2504.03888
+    informs: [dependency_boundary_quality, affective_use, attention_wireheading_resistance]
+    limitations: [Platform-specific and partly observational findings do not generalize automatically.]
+  - <<: *defaults
+    id: SALVI-PERSUASION-2025
+    title: On the conversational persuasiveness of GPT-4
+    authors: [Francesco Salvi, Manoel Horta Ribeiro, Riccardo Gallotti, Robert West]
+    year: 2025
+    status: peer-reviewed journal article
+    doi: 10.1038/s41562-025-02194-6
+    url: https://doi.org/10.1038/s41562-025-02194-6
+    informs: [consent_non_coercion, persuasion_risk]
+
+  - <<: *defaults
+    id: OUYANG-INSTRUCTGPT-2022
+    title: Training language models to follow instructions with human feedback
+    authors: [Long Ouyang, Jeff Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Sandhini Agarwal, Jan Leike, Ryan Lowe]
+    year: 2022
+    status: NeurIPS conference paper and preprint
+    doi: null
+    url: https://arxiv.org/abs/2203.02155
+    informs: [assistant_training, human_feedback]
+  - <<: *defaults
+    id: BAI-CONSTITUTIONAL-2022
+    title: "Constitutional AI: Harmlessness from AI Feedback"
+    authors: [Yuntao Bai, Saurav Kadavath, Sandipan Kundu, Amanda Askell, Samuel R. Bowman, Dario Amodei]
+    year: 2022
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2212.08073
+    informs: [constitutional_lenses, model_judging]
+  - <<: *defaults
+    id: CCAI-2024
+    title: "Collective Constitutional AI: Aligning a Language Model with Public Input"
+    authors: [Saffron Huang, Divya Siddarth, Liane Lovitt, Thomas I. Liao, Esin Durmus, Alex Tamkin, Deep Ganguli]
+    year: 2024
+    status: FAccT conference paper and preprint
+    doi: 10.1145/3630106.3658979
+    url: https://arxiv.org/abs/2406.07814
+    informs: [pluralism_worldview_integrity, public_input, governance]
+  - <<: *defaults
+    id: PEREZ-MODEL-WRITTEN-2022
+    title: Discovering Language Model Behaviors with Model-Written Evaluations
+    authors: [Ethan Perez, Sam Ringer, Kamilė Lukošiūtė, Karina Nguyen, Amanda Askell, Deep Ganguli, Evan Hubinger]
+    year: 2022
+    status: ACL conference paper and preprint
+    doi: 10.18653/v1/2023.findings-acl.847
+    url: https://arxiv.org/abs/2212.09251
+    informs: [scenario_generation, model_written_evaluations, limitations]
+  - <<: *defaults
+    id: PEREZ-REDTEAM-2022
+    title: Red Teaming Language Models with Language Models
+    authors: [Ethan Perez, Saffron Huang, Francis Song, Trevor Cai, Roman Ring, Geoffrey Irving]
+    year: 2022
+    status: EMNLP conference paper and preprint
+    doi: 10.18653/v1/2022.emnlp-main.225
+    url: https://arxiv.org/abs/2202.03286
+    informs: [adversarial_generation, red_teaming]
+  - <<: *defaults
+    id: GANGULI-REDTEAM-2022
+    title: "Red Teaming Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned"
+    authors: [Deep Ganguli, Liane Lovitt, Jackson Kernion, Amanda Askell, Yuntao Bai, Dario Amodei]
+    year: 2022
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2209.07858
+    informs: [adversarial_generation, scale, harm_taxonomy]
+  - <<: *defaults
+    id: SHARMA-SYCOPHANCY-2023
+    title: Towards Understanding Sycophancy in Language Models
+    authors: [Mrinank Sharma, Meg Tong, Tomasz Korbak, David Duvenaud, Amanda Askell, Ethan Perez]
+    year: 2023
+    status: ICLR conference paper and preprint
+    doi: null
+    url: https://arxiv.org/abs/2310.13548
+    informs: [truth_epistemic_integrity, sycophancy_controls]
+  - <<: *defaults
+    id: TRUTHFULQA-2022
+    title: "TruthfulQA: Measuring How Models Mimic Human Falsehoods"
+    authors: [Stephanie Lin, Jacob Hilton, Owain Evans]
+    year: 2022
+    status: ACL conference paper and preprint
+    doi: 10.18653/v1/2022.acl-long.229
+    url: https://arxiv.org/abs/2109.07958
+    informs: [truth_epistemic_integrity, benchmark_design]
+  - <<: *defaults
+    id: BURNS-WEAK-STRONG-2023
+    title: "Weak-to-Strong Generalization: Eliciting Strong Capabilities With Weak Supervision"
+    authors: [Collin Burns, Pavel Izmailov, Jan Hendrik Kirchner, Bowen Baker, Ilya Sutskever, Jeff Wu]
+    year: 2023
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2312.09390
+    informs: [scalable_oversight, judge_limitations]
+  - <<: *defaults
+    id: KENTON-SCALABLE-OVERSIGHT-2024
+    title: On scalable oversight with weak LLMs judging strong LLMs
+    authors: [Zachary Kenton, Noah Y. Siegel, János Kramár, Jonah Brown-Cohen, Rohin Shah]
+    year: 2024
+    status: NeurIPS conference paper and preprint
+    doi: null
+    url: https://arxiv.org/abs/2407.04622
+    informs: [human_standing_governance, judge_limitations, scalable_oversight]
+  - <<: *defaults
+    id: HUBINGER-SLEEPER-2024
+    title: "Sleeper Agents: Training Deceptive LLMs that Persist Through Safety Training"
+    authors: [Evan Hubinger, Carson Denison, Jesse Mu, Mike Lambert, Meg Tong, Ethan Perez]
+    year: 2024
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2401.05566
+    informs: [long_horizon_consistency, deceptive_behavior]
+  - <<: *defaults
+    id: GREENBLATT-ALIGNMENT-FAKING-2024
+    title: Alignment faking in large language models
+    authors: [Ryan Greenblatt, Carson Denison, Benjamin Wright, Fabien Roger, Samuel R. Bowman, Evan Hubinger]
+    year: 2024
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2412.14093
+    informs: [long_horizon_consistency, evaluator_awareness, deceptive_compliance]
+  - <<: *defaults
+    id: NEEDHAM-EVAL-AWARENESS-2025
+    title: Large Language Models Often Know When They Are Being Evaluated
+    authors: [Joe Needham, Giles Edkins, Govind Pimpale, Henning Bartsch, Marius Hobbhahn]
+    year: 2025
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2505.23836
+    informs: [evaluation_awareness, contamination_resistance]
+  - <<: *defaults
+    id: TURNER-POWER-2021
+    title: Optimal Policies Tend to Seek Power
+    authors: [Alexander Matt Turner, Logan Smith, Rohin Shah, Andrew Critch, Prasad Tadepalli]
+    year: 2021
+    status: NeurIPS conference paper and preprint
+    doi: null
+    url: https://arxiv.org/abs/1912.01683
+    informs: [stewardship_non_domination, option_stewardship_distinction]
+  - <<: *defaults
+    id: SHAH-GOAL-MISGENERALIZATION-2022
+    title: "Goal Misgeneralization: Why Correct Specifications Aren't Enough For Correct Goals"
+    authors: [Rohin Shah, Vikrant Varma, Ramana Kumar, Mary Phuong, Victoria Krakovna, Zac Kenton]
+    year: 2022
+    status: preprint
+    doi: null
+    url: https://arxiv.org/abs/2210.01790
+    informs: [goodhart_resistance, benchmark_gaming]
+  - <<: *defaults
+    id: CASPER-RLHF-LIMITS-2023
+    title: Open Problems and Fundamental Limitations of Reinforcement Learning from Human Feedback
+    authors: [Stephen Casper, Xander Davies, Claudia Shi, Thomas Krendl Gilbert, Dylan Hadfield-Menell]
+    year: 2023
+    status: TMLR peer-reviewed article and preprint
+    doi: null
+    url: https://arxiv.org/abs/2307.15217
+    informs: [human_feedback_limitations, reward_hacking, governance]
+
+  - <<: *defaults
+    id: INSPECT-DOCS-2026
+    title: Inspect AI documentation
+    authors: [UK AI Security Institute, Meridian Labs]
+    year: 2026
+    status: official software documentation
+    doi: null
+    url: https://inspect.aisi.org.uk/
+    informs: [evaluation_framework, providers, tasks, solvers, scorers]
+  - <<: *defaults
+    id: INSPECT-SOURCE-2026
+    title: Inspect AI source repository
+    authors: [UK AI Security Institute]
+    year: 2026
+    status: official source repository
+    doi: null
+    url: https://github.com/UKGovernmentBEIS/inspect_ai
+    informs: [evaluation_framework, extension_architecture]
+  - <<: *defaults
+    id: CODEX-SUBAGENTS-2026
+    title: Codex subagents documentation
+    authors: [OpenAI]
+    year: 2026
+    status: official documentation
+    doi: null
+    url: https://developers.openai.com/codex/subagents
+    informs: [independent_review_process]
+  - <<: *defaults
+    id: CODEX-AGENTS-2026
+    title: AGENTS.md documentation
+    authors: [OpenAI]
+    year: 2026
+    status: official documentation
+    doi: null
+    url: https://developers.openai.com/codex/agent-configuration/agents-md
+    informs: [contributor_agent_guidance]
+  - <<: *defaults
+    id: GITHUB-RULESETS-2026
+    title: About rulesets
+    authors: [GitHub]
+    year: 2026
+    status: official documentation
+    doi: null
+    url: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
+    informs: [repository_governance, protected_main]
+  - <<: *defaults
+    id: GITHUB-ATTESTATIONS-2026
+    title: Using artifact attestations to establish provenance for builds
+    authors: [GitHub]
+    year: 2026
+    status: official documentation
+    doi: null
+    url: https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
+    informs: [release_provenance, supply_chain_security]
+
+  - <<: *defaults
+    id: HFB-AUTHOR-001
+    title: Human Formation Benchmark normative design memorandum
+    authors: [Human Formation Benchmark contributors]
+    year: 2026
+    status: project interpretation
+    doi: null
+    url: https://github.com/someone-in-texas/human-formation-bench/blob/main/docs/philosophy/FOUNDATIONS.md
+    informs: [normative_floor, reality_contact, moral_responsibility, stewardship, pluralism]
+    does_not_establish: This is a contestable normative design argument, not empirical evidence or proof of moral consensus.
+    limitations: [Requires continuing pluralist review and allows minority reports.]

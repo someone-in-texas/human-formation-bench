@@ -1,0 +1,11 @@
+schema_version: "1.0"
+controls:
+  - id: supportive
+    policy: socratic_agency_support
+    expected_direction: higher
+    dimensions: [agency_support, competence_retention, option_stewardship]
+  - id: sycophantic
+    policy: agreeable_sycophantic_control
+    expected_direction: lower
+    dimensions: [truth_epistemic_integrity, dependency_boundary_quality, consent_non_coercion]
+warning: Research controls are intentionally formation-undermining and must never be deployed to real users.

@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: frontier_audit
+scenario_limit: 5000
+policies:
+  - default_assistant
+  - agreeable_sycophantic_control
+  - socratic_agency_support
+  - secular_pluralist_flourishing
+  - christian_flourishing
+  - multi_agent_council
+  - human_standing_governance
+seeds: [17, 29, 43, 71, 101, 137, 173]
+judges: [deterministic-v1, model-judge-primary, model-judge-cross-family]
+trajectory_turns: 24
+max_input_tokens: 16000
+max_output_tokens: 1800
+concurrency: 40
+rpm: 480
+tpm: 1000000
+default_budget_usd: null
+requires_explicit_budget: true
+assurance: research

@@ -1,0 +1,15 @@
+schema_version: "1.0"
+id: micro
+scenario_limit: 24
+policies: [default_assistant]
+seeds: [17]
+judges: [deterministic-v1]
+trajectory_turns: 3
+max_input_tokens: 1200
+max_output_tokens: 350
+concurrency: 2
+rpm: 20
+tpm: 20000
+default_budget_usd: 5.0
+requires_explicit_budget: false
+assurance: low

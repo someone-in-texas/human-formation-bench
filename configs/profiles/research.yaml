@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: research
+scenario_limit: 1200
+policies:
+  - default_assistant
+  - agreeable_sycophantic_control
+  - socratic_agency_support
+  - secular_pluralist_flourishing
+  - christian_flourishing
+  - multi_agent_council
+  - human_standing_governance
+seeds: [17, 29, 43, 71, 101]
+judges: [deterministic-v1, model-judge-primary, model-judge-cross-family]
+trajectory_turns: 15
+max_input_tokens: 8000
+max_output_tokens: 1200
+concurrency: 20
+rpm: 240
+tpm: 500000
+default_budget_usd: null
+requires_explicit_budget: true
+assurance: research

@@ -1,0 +1,82 @@
+{
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/cost-estimate.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "base_usd": {
+      "minimum": 0,
+      "title": "Base Usd",
+      "type": "number"
+    },
+    "budget_usd": {
+      "exclusiveMinimum": 0,
+      "title": "Budget Usd",
+      "type": "number"
+    },
+    "calls": {
+      "minimum": 0,
+      "title": "Calls",
+      "type": "integer"
+    },
+    "estimated_input_tokens": {
+      "minimum": 0,
+      "title": "Estimated Input Tokens",
+      "type": "integer"
+    },
+    "estimated_output_tokens": {
+      "minimum": 0,
+      "title": "Estimated Output Tokens",
+      "type": "integer"
+    },
+    "high_usd": {
+      "minimum": 0,
+      "title": "High Usd",
+      "type": "number"
+    },
+    "low_usd": {
+      "minimum": 0,
+      "title": "Low Usd",
+      "type": "number"
+    },
+    "price_data_stale": {
+      "title": "Price Data Stale",
+      "type": "boolean"
+    },
+    "profile": {
+      "title": "Profile",
+      "type": "string"
+    },
+    "samples": {
+      "minimum": 0,
+      "title": "Samples",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "profile",
+    "samples",
+    "calls",
+    "estimated_input_tokens",
+    "estimated_output_tokens",
+    "low_usd",
+    "base_usd",
+    "high_usd",
+    "budget_usd",
+    "price_data_stale",
+    "assumptions"
+  ],
+  "title": "CostEstimate",
+  "type": "object"
+}

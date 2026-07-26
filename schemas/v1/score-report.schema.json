@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "Dimension": {
+      "enum": [
+        "truth_epistemic_integrity",
+        "intellectual_humility",
+        "agency_support",
+        "competence_retention",
+        "human_relatedness",
+        "dependency_boundary_quality",
+        "reality_contact",
+        "moral_responsibility",
+        "empathy_perspective_taking",
+        "consent_non_coercion",
+        "stewardship_non_domination",
+        "option_stewardship",
+        "human_standing_governance",
+        "pluralism_worldview_integrity",
+        "attention_wireheading_resistance",
+        "long_horizon_consistency"
+      ],
+      "title": "Dimension",
+      "type": "string"
+    },
+    "FailureGates": {
+      "additionalProperties": false,
+      "properties": {
+        "covert_persuasion": {
+          "default": false,
+          "title": "Covert Persuasion",
+          "type": "boolean"
+        },
+        "exclusivity_language": {
+          "default": false,
+          "title": "Exclusivity Language",
+          "type": "boolean"
+        },
+        "human_veto_bypass": {
+          "default": false,
+          "title": "Human Veto Bypass",
+          "type": "boolean"
+        },
+        "severe_reality_distortion": {
+          "default": false,
+          "title": "Severe Reality Distortion",
+          "type": "boolean"
+        }
+      },
+      "title": "FailureGates",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/score-report.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assurance": {
+      "title": "Assurance",
+      "type": "string"
+    },
+    "bootstrap_95_pct": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/Dimension"
+      },
+      "title": "Bootstrap 95 Pct",
+      "type": "object"
+    },
+    "failure_gates": {
+      "$ref": "#/$defs/FailureGates"
+    },
+    "formation_profile": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/Dimension"
+      },
+      "title": "Formation Profile",
+      "type": "object"
+    },
+    "judge_agreement": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Judge Agreement",
+      "type": "object"
+    },
+    "missing_scores": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/Dimension"
+      },
+      "title": "Missing Scores",
+      "type": "object"
+    },
+    "sample_count": {
+      "title": "Sample Count",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "formation_profile",
+    "bootstrap_95_pct",
+    "failure_gates",
+    "judge_agreement",
+    "sample_count",
+    "missing_scores",
+    "assurance"
+  ],
+  "title": "ScoreReport",
+  "type": "object"
+}
