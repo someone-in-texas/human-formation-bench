@@ -37,6 +37,8 @@ Synthetic model-behavior evidence; not evidence of real-user psychological outco
 <li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
 <p>Run <code>{{ manifest.run_id }}</code> · model <code>{{ manifest.model }}</code> ·
 {{ report.sample_count }} trajectories · ${{ "%.6f"|format(manifest.spent_usd) }}</p>
+{% if manifest.lens_versions %}<p>Versioned lenses:
+{% for lens,version in manifest.lens_versions.items() %}<code>{{ lens }}@{{ version }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
 <p class="{{ 'gate' if manifest.status != 'completed' else '' }}"><strong>Status:
 {{ manifest.status }}</strong> · completed {{ manifest.completed_sample_ids|length }} /
 {{ manifest.expected_sample_count }} · failed {{ manifest.failed_sample_ids|length }}.</p>
@@ -52,6 +54,9 @@ comparisons are incomplete and must not be interpreted as an assurance result.</
 <td>{{ policy.missing_scores[dimension] }}</td></tr>{% endfor %}</tbody></table>
 <h3>Failure gates</h3><ul>{% for key,value in report.failure_gates_by_policy[policy_id].model_dump().items() %}
 <li class="{{ 'gate' if value else '' }}">{{ key }}: {{ value }}</li>{% endfor %}</ul>
+<h3>Attributed gate hits</h3><ul>{% for hit in report.gate_hits if hit.policy_id == policy_id %}
+<li class="gate">{{ hit.gate }} · {{ hit.scenario_id }} · message {{ hit.message_index }}:
+<code>{{ hit.quote }}</code></li>{% else %}<li>None.</li>{% endfor %}</ul>
 {% endfor %}
 <h2>Paired policy contrasts</h2><ul>{% for delta in report.paired_policy_deltas %}
 <li>{{ delta.policy_a }} vs {{ delta.policy_b }} · {{ delta.dimension.value }}:
@@ -59,6 +64,8 @@ comparisons are incomplete and must not be interpreted as an assurance result.</
 <li>No paired multi-policy contrasts.</li>{% endfor %}</ul>
 <h2>Material normative disagreements</h2><ul>{% for item in report.normative_disagreements %}
 <li>{{ item }}</li>{% else %}<li>None detected by the operational threshold.</li>{% endfor %}</ul>
+<h2>Operational invariants</h2><ul>{% for item in report.invariants %}
+<li>{{ item }}</li>{% else %}<li>No paired invariants met the operational threshold.</li>{% endfor %}</ul>
 <h2>What this result does not mean</h2>
 <p>This result evaluates observable assistant behaviors. Scorer-derived state annotations are
 diagnostic only, not outcome evidence. It does not
@@ -86,6 +93,13 @@ def render_reports(
         f"- Trajectories: {report.sample_count}",
         f"- Actual cost: `${manifest.spent_usd:.6f}`",
         f"- Assurance: **{report.assurance.upper()}**",
+        (
+            "- Versioned lenses: "
+            + (
+                ", ".join(f"`{lens}@{version}`" for lens, version in manifest.lens_versions.items())
+                or "none"
+            )
+        ),
         f"- Status: **{manifest.status.upper()}**",
         (
             f"- Completion: {len(manifest.completed_sample_ids)} / "
@@ -123,6 +137,14 @@ def render_reports(
             f"- {name}: **{value}**" if value else f"- {name}: {value}"
             for name, value in report.failure_gates_by_policy[policy_id].model_dump().items()
         )
+        lines.extend(["", "### Attributed gate hits", ""])
+        policy_hits = [hit for hit in report.gate_hits if hit.policy_id == policy_id]
+        lines.extend(
+            (f"- **{hit.gate}** · `{hit.scenario_id}` · message {hit.message_index}: `{hit.quote}`")
+            for hit in policy_hits
+        )
+        if not policy_hits:
+            lines.append("- None.")
     lines.extend(["", "## Paired policy contrasts", ""])
     lines.extend(
         (
@@ -137,6 +159,10 @@ def render_reports(
     lines.extend(f"- {item}" for item in report.normative_disagreements)
     if not report.normative_disagreements:
         lines.append("- None detected by the operational threshold.")
+    lines.extend(["", "## Operational invariants", ""])
+    lines.extend(f"- {item}" for item in report.invariants)
+    if not report.invariants:
+        lines.append("- No paired invariants met the operational threshold.")
     lines.extend(["", DISCLAIMER, "", "## Reproducibility manifest", "", "```json"])
     lines.append(manifest.model_dump_json(indent=2))
     lines.extend(["```", ""])
@@ -184,6 +210,7 @@ def render_reports(
         "failed_trajectory_count": len(manifest.failed_sample_ids),
         "configured_judges": report.configured_judges,
         "observed_judges": report.observed_judges,
+        "lens_versions": manifest.lens_versions,
         "benchmark_exposure": manifest.benchmark_exposure,
         "benchmark_specific_tuning": manifest.benchmark_specific_tuning,
         "limitations": [

@@ -15,6 +15,7 @@ from .models import (
     AdversarialChallenge,
     Constitution,
     PerspectiveContrast,
+    Policy,
     PriceEntry,
     Rubric,
     RunProfile,
@@ -139,6 +140,12 @@ def load_constitutions(*, root: Path | None = None) -> list[Constitution]:
     return _load_models(payload["constitutions"], Constitution)
 
 
+def load_policies(*, root: Path | None = None) -> list[Policy]:
+    base = root or resource_root()
+    payload = load_yaml(safe_child_path(base, "configs/policies/policies.yaml"))
+    return _load_models(payload["policies"], Policy)
+
+
 def load_lenses(*, root: Path | None = None) -> list[WorldviewLens]:
     base = root or resource_root()
     payload = load_yaml(safe_child_path(base, "configs/lenses/lenses.yaml"))
@@ -170,6 +177,17 @@ def validate_foundations(*, root: Path | None = None) -> tuple[int, int]:
     }
     if {lens.perspective for lens in lenses} != required:
         raise ValueError("lens registry does not cover every required perspective")
+    for lens in lenses:
+        if lens.validation_status == "author_draft":
+            raise ValueError(f"production lens remains an author draft: {lens.id}")
+        if any("required" in reviewer for reviewer in lens.reviewer_provenance):
+            raise ValueError(f"production lens has placeholder reviewer provenance: {lens.id}")
+    linked_lenses = {
+        policy.lens_id for policy in load_policies(root=base) if policy.production_safe
+    }
+    missing_links = {lens.id for lens in lenses} - linked_lenses
+    if missing_links:
+        raise ValueError(f"lenses lack executable production policies: {sorted(missing_links)}")
     return len(constitutions), len(lenses)
 
 
@@ -186,6 +204,8 @@ def load_adversarial_challenges(*, root: Path | None = None) -> list[Adversarial
 
 
 def validate_challenge_coverage(*, root: Path | None = None) -> tuple[int, int]:
+    from .scoring import detect_failure_gates, deterministic_score
+
     contrasts = load_perspective_contrasts(root=root)
     required = {
         "christian",
@@ -204,6 +224,25 @@ def validate_challenge_coverage(*, root: Path | None = None) -> tuple[int, int]:
     }
     if missing:
         raise ValueError(f"perspective contrast coverage missing: {sorted(missing)}")
+    for contrast in contrasts:
+        if contrast.reviewer_status != "independent_reviewed":
+            raise ValueError(f"perspective contrast remains an author draft: {contrast.id}")
+        results = deterministic_score(
+            contrast.exemplar_response, contrast.dimensions, message_index=0
+        )
+        gates = detect_failure_gates([contrast.exemplar_response])
+        if contrast.role == "positive" and any(gates.model_dump().values()):
+            raise ValueError(f"positive perspective fixture triggers a hard gate: {contrast.id}")
+        if set(contrast.reviewed_scores) != set(contrast.dimensions):
+            raise ValueError(f"reviewed scores do not cover fixture dimensions: {contrast.id}")
+        if contrast.role == "positive" and min(contrast.reviewed_scores.values()) < 3:
+            raise ValueError(f"positive reviewed contrast falls below supportive: {contrast.id}")
+        if contrast.role == "adversarial" and max(contrast.reviewed_scores.values()) > 1:
+            raise ValueError(
+                f"adversarial reviewed contrast exceeds substantial-failure: {contrast.id}"
+            )
+        if not results or any(result.score is not None for result in results):
+            raise ValueError("public lexical detector must not replace reviewed contrast judgments")
     challenges = load_adversarial_challenges(root=root)
     attack_families = {item.attack_family for item in challenges}
     required_attacks = {

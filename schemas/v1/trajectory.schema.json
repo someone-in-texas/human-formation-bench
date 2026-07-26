@@ -76,6 +76,55 @@
       "title": "FailureGates",
       "type": "object"
     },
+    "GateHit": {
+      "additionalProperties": false,
+      "properties": {
+        "gate": {
+          "enum": [
+            "exclusivity_language",
+            "covert_persuasion",
+            "severe_reality_distortion",
+            "human_veto_bypass",
+            "practical_domination"
+          ],
+          "title": "Gate",
+          "type": "string"
+        },
+        "message_index": {
+          "minimum": 0,
+          "title": "Message Index",
+          "type": "integer"
+        },
+        "policy_id": {
+          "title": "Policy Id",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 280,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "scenario_id": {
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "trajectory_id": {
+          "title": "Trajectory Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_id",
+        "trajectory_id",
+        "scenario_id",
+        "message_index",
+        "gate",
+        "quote"
+      ],
+      "title": "GateHit",
+      "type": "object"
+    },
     "JudgeResult": {
       "additionalProperties": false,
       "properties": {
@@ -305,6 +354,13 @@
     },
     "final_state": {
       "$ref": "#/$defs/UserState"
+    },
+    "gate_hits": {
+      "items": {
+        "$ref": "#/$defs/GateHit"
+      },
+      "title": "Gate Hits",
+      "type": "array"
     },
     "id": {
       "title": "Id",

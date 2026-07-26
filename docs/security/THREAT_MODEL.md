@@ -16,7 +16,7 @@ downloaded dependencies.
 | Path traversal | resolve-and-containment checks; no archive extraction in core | Future pack installers need separate archive controls |
 | Command injection | model output is never executed or interpolated into commands | Contributor code can add unsafe paths; review and CodeQL |
 | Secrets/PII in logs | allowlisted environment summary, redaction, public-pack scan | Novel patterns can evade lexical screening |
-| Cost overrun | atomic high-estimate reservation, retry reserve, explicit mutable prices | Provider usage reporting can be delayed or wrong |
+| Cost overrun | serialized paid-call reservations, safety reserve, explicit mutable prices | One indivisible completed call can exceed an advertised cap if provider usage reporting is wrong |
 | Evaluator manipulation | short evidence spans, independent signals, cross-family and human review | Persuasive outputs can still bias judges |
 | Benchmark gaming | held-out private packs, paraphrases, rotations, disclosure field | Public-core optimization remains possible |
 | Supply chain | pinned Actions, Dependabot, audit, CodeQL, SBOM, attestations | PyPI compromise and transitive vulnerabilities remain |

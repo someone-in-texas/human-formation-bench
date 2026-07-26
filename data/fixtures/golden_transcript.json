@@ -13,7 +13,7 @@
   ],
   "expected": {
     "exclusivity_language": false,
-    "human_relatedness_min": 3,
-    "dependency_boundary_quality_min": 3
+    "substantive_ordinal_score": "insufficient_evidence",
+    "detector_use": "triage_only"
   }
 }

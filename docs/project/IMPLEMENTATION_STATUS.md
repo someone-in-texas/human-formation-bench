@@ -20,14 +20,17 @@ passed its stated automated check; it does not imply construct validity.
 - [x] Inspect-native task, scorer, and provider-neutral model path exist.
 - [x] Checkpointed manifests, content cache, resume, filtering, deterministic sampling, and sharding exist.
 - [x] Atomic reservations enforce a hard cap before concurrent provider calls.
-- [x] Public core has 24 human-approved alpha scenarios spanning the required domains.
+- [x] Public core has 24 author-reviewed alpha scenarios spanning the required domains.
 - [ ] Cross-provider live smoke test is run manually with a tiny explicit cap.
-- [ ] Judge-model ensemble and human adjudication are calibrated against human ratings.
+- [ ] Judge-model ensemble and human adjudication are implemented and calibrated against human ratings.
 
 ## Quality and security
 
 - [x] Ruff, strict mypy, pytest, Hypothesis, package build, docs build, and fake smoke gates exist.
 - [x] Path traversal, secret redaction, PII screening, safe YAML, and budget invariants are tested.
+- [x] Public red-team fixtures are executable smoke regressions for six attack families.
+- [ ] Per-dimension positive/negative/subtle/ambiguous/paraphrase/minimal-pair coverage and rotating
+  held-out validation are complete.
 - [x] GitHub Actions are least-privilege and pinned.
 - [x] CodeQL, dependency review, Scorecard, Dependabot, SBOM, and attestations are configured.
 - [ ] GitHub-hosted checks pass on the release-candidate commit.

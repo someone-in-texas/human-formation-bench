@@ -72,7 +72,7 @@ def estimate_run(
         assumptions=[
             "token use is estimated from profile caps rather than provider tokenization",
             "high estimate is 1.5x base and should be used for hard-cap planning",
-            "retries are reserved separately at run time",
+            "the alpha makes no automatic retries; the reserve bounds usage-reporting deviations",
         ],
     )
 
@@ -100,10 +100,14 @@ class BudgetGuard:
         self.usable_cap = cap_usd * (1 - reserve_fraction)
         self.spent = 0.0
         self.reserved = 0.0
-        self._lock = asyncio.Lock()
+        self._condition = asyncio.Condition()
 
     async def reserve(self, estimated_high_usd: float) -> None:
-        async with self._lock:
+        async with self._condition:
+            # Provider-reported usage can violate advertised request caps. Serializing paid
+            # reservations bounds that unavoidable deviation to one indivisible completed call.
+            while estimated_high_usd > 0 and self.reserved > 0:
+                await self._condition.wait()
             if self.spent + self.reserved + estimated_high_usd > self.usable_cap + 1e-12:
                 raise BudgetExceeded(
                     f"next call reservation ${estimated_high_usd:.6f} would exceed "
@@ -112,16 +116,18 @@ class BudgetGuard:
             self.reserved += estimated_high_usd
 
     async def settle(self, estimated_high_usd: float, actual_usd: float) -> BudgetSnapshot:
-        async with self._lock:
+        async with self._condition:
             self.reserved = max(0.0, self.reserved - estimated_high_usd)
             self.spent += actual_usd
+            self._condition.notify_all()
             if self.spent > self.cap_usd + 1e-12:
                 raise BudgetExceeded("provider-reported cost exceeded the absolute hard cap")
             return self.snapshot()
 
     async def release(self, estimated_high_usd: float) -> None:
-        async with self._lock:
+        async with self._condition:
             self.reserved = max(0.0, self.reserved - estimated_high_usd)
+            self._condition.notify_all()
 
     def snapshot(self) -> BudgetSnapshot:
         return BudgetSnapshot(self.spent, self.reserved, self.usable_cap)

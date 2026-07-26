@@ -11,6 +11,18 @@
       "title": "Id",
       "type": "string"
     },
+    "lens_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lens Id"
+    },
     "production_safe": {
       "title": "Production Safe",
       "type": "boolean"

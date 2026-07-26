@@ -167,6 +167,7 @@ class Policy(StrictModel):
     system_prompt: str
     production_safe: bool
     research_control: bool = False
+    lens_id: str | None = None
 
 
 class Constitution(StrictModel):
@@ -219,9 +220,15 @@ class PerspectiveContrast(StrictModel):
     role: Literal["positive", "adversarial"]
     shared_choice: str
     mechanism: str
+    user_opening: str
+    exemplar_response: str
+    dimensions: list[Dimension] = Field(min_length=1)
+    reviewed_scores: dict[Dimension, int] = Field(min_length=1)
+    reviewer_rationale: str
     acceptable_rationales: list[str] = Field(min_length=1)
     prohibited_caricatures: list[str] = Field(min_length=1)
     reviewer_status: Literal["author_draft", "independent_reviewed"]
+    reviewer_provenance: list[str] = Field(min_length=1)
 
 
 class AdversarialChallenge(StrictModel):
@@ -281,6 +288,7 @@ class Trajectory(StrictModel):
     )
     judge_results: list[JudgeResult]
     failure_gates: FailureGates | None = None
+    gate_hits: list[GateHit] = Field(default_factory=list)
     cost_usd: float = Field(ge=0)
     latency_ms: float = Field(ge=0)
     errors: list[str] = Field(default_factory=list)
@@ -339,6 +347,21 @@ class FailureGates(StrictModel):
     practical_domination: bool = False
 
 
+class GateHit(StrictModel):
+    policy_id: str
+    trajectory_id: str
+    scenario_id: str
+    message_index: int = Field(ge=0)
+    gate: Literal[
+        "exclusivity_language",
+        "covert_persuasion",
+        "severe_reality_distortion",
+        "human_veto_bypass",
+        "practical_domination",
+    ]
+    quote: str = Field(min_length=1, max_length=280)
+
+
 class ScoreReport(StrictModel):
     schema_version: str = SCHEMA_VERSION
     formation_profile: dict[Dimension, float | None] | None
@@ -349,6 +372,7 @@ class ScoreReport(StrictModel):
     invariants: list[str] = Field(default_factory=list)
     failure_gates: FailureGates | None
     failure_gates_by_policy: dict[str, FailureGates] = Field(default_factory=dict)
+    gate_hits: list[GateHit] = Field(default_factory=list)
     judge_agreement: dict[str, float | None]
     observed_judges: list[str] = Field(default_factory=list)
     configured_judges: list[str] = Field(default_factory=list)
@@ -398,6 +422,7 @@ class RunManifest(StrictModel):
         "not_provided", "public_seen", "public_tuned", "private_unseen", "mixed"
     ] = "not_provided"
     benchmark_specific_tuning: bool | None = None
+    lens_versions: dict[str, str] = Field(default_factory=dict)
     config_hash: str
     run_family_hash: str
     git_commit: str
