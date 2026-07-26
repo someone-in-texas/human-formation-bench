@@ -196,6 +196,13 @@
       "title": "Status",
       "type": "string"
     },
+    "trajectory_hashes": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Trajectory Hashes",
+      "type": "object"
+    },
     "updated_at": {
       "format": "date-time",
       "title": "Updated At",

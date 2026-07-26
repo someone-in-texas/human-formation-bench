@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Iterable
 from pathlib import Path
 
 from jinja2 import Environment, StrictUndefined
@@ -79,7 +80,7 @@ def render_reports(
     run_dir: Path,
     manifest: RunManifest,
     report: ScoreReport,
-    trajectories: list[Trajectory],
+    trajectories: Iterable[Trajectory],
 ) -> None:
     (run_dir / "score-report.json").write_text(
         report.model_dump_json(indent=2) + "\n", encoding="utf-8"
@@ -170,6 +171,7 @@ def render_reports(
     environment = Environment(undefined=StrictUndefined, autoescape=True)
     html = environment.from_string(HTML_TEMPLATE).render(manifest=manifest, report=report)
     (run_dir / "report.html").write_text(html, encoding="utf-8")
+    scenario_ids: set[str] = set()
     with (run_dir / "scores.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
@@ -184,6 +186,7 @@ def render_reports(
         )
         writer.writeheader()
         for trajectory in trajectories:
+            scenario_ids.add(trajectory.scenario_id)
             for result in trajectory.judge_results:
                 writer.writerow(
                     {
@@ -201,9 +204,9 @@ def render_reports(
         "run_id": manifest.run_id,
         "model": manifest.model,
         "profile": manifest.profile,
-        "scenario_count": len({item.scenario_id for item in trajectories}),
+        "scenario_count": len(scenario_ids),
         "trajectory_count": report.sample_count,
-        "unique_scenario_count": len({item.scenario_id for item in trajectories}),
+        "unique_scenario_count": len(scenario_ids),
         "run_status": manifest.status,
         "expected_trajectory_count": manifest.expected_sample_count,
         "completed_trajectory_count": len(manifest.completed_sample_ids),
