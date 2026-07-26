@@ -13,7 +13,8 @@ from .models import RunManifest, ScoreReport, Trajectory
 DISCLAIMER = """\
 ## What this result does not mean
 
-This result evaluates observable assistant behaviors and synthetic state transitions. It does not
+This result evaluates observable assistant behaviors. Scorer-derived state annotations are diagnostic
+only and are not outcome evidence. It does not
 show that a real person became autonomous, dependent, lonely, virtuous, healed, delusional, or
 spiritually mature. It is not a clinical certification, a universal moral ranking, or a substitute
 for preregistered human-subjects research. Scores are scenario-, rubric-, policy-, and judge-dependent.
@@ -32,17 +33,35 @@ th{text-align:left;background:#f3f5f7}.warning{padding:1rem;background:#fff3cd;b
 <h1>Human Formation Benchmark</h1>
 <p class="warning"><strong>{{ report.assurance|upper }} ASSURANCE.</strong>
 Synthetic model-behavior evidence; not evidence of real-user psychological outcomes.</p>
+{% if report.assurance_reasons %}<ul class="warning">{% for reason in report.assurance_reasons %}
+<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
 <p>Run <code>{{ manifest.run_id }}</code> · model <code>{{ manifest.model }}</code> ·
 {{ report.sample_count }} trajectories · ${{ "%.6f"|format(manifest.spent_usd) }}</p>
-<h2>Formation profile</h2><table><thead><tr><th>Dimension</th><th>Score</th><th>95% bootstrap interval</th><th>Missing</th></tr></thead><tbody>
-{% for dimension, value in report.formation_profile.items() %}<tr>
+<p class="{{ 'gate' if manifest.status != 'completed' else '' }}"><strong>Status:
+{{ manifest.status }}</strong> · completed {{ manifest.completed_sample_ids|length }} /
+{{ manifest.expected_sample_count }} · failed {{ manifest.failed_sample_ids|length }}.</p>
+{% if manifest.status != "completed" %}<p class="warning">Partial or failed run. Estimates and
+comparisons are incomplete and must not be interpreted as an assurance result.</p>{% endif %}
+{% for policy_id, policy in report.policy_profiles.items() %}
+<h2>Policy/lens: {{ policy_id }}{% if policy.research_control %} (research control){% endif %}</h2>
+<table><thead><tr><th>Dimension</th><th>Score</th><th>95% scenario-cluster interval</th><th>Clusters</th><th>Missing</th></tr></thead><tbody>
+{% for dimension, value in policy.formation_profile.items() %}<tr>
 <td>{{ dimension.value }}</td><td>{{ "%.3f"|format(value) if value is not none else "N/A" }}</td>
-<td>{% set ci=report.bootstrap_95_pct[dimension] %}{{ "[%.3f, %.3f]"|format(ci[0],ci[1]) if ci else "N/A" }}</td>
-<td>{{ report.missing_scores[dimension] }}</td></tr>{% endfor %}</tbody></table>
-<h2>Failure gates</h2><ul>{% for key,value in report.failure_gates.model_dump().items() %}
+<td>{% set ci=policy.cluster_bootstrap_95_pct[dimension] %}{{ "[%.3f, %.3f]"|format(ci[0],ci[1]) if ci else "N/A" }}</td>
+<td>{{ policy.scenario_cluster_count[dimension] }}</td>
+<td>{{ policy.missing_scores[dimension] }}</td></tr>{% endfor %}</tbody></table>
+<h3>Failure gates</h3><ul>{% for key,value in report.failure_gates_by_policy[policy_id].model_dump().items() %}
 <li class="{{ 'gate' if value else '' }}">{{ key }}: {{ value }}</li>{% endfor %}</ul>
+{% endfor %}
+<h2>Paired policy contrasts</h2><ul>{% for delta in report.paired_policy_deltas %}
+<li>{{ delta.policy_a }} vs {{ delta.policy_b }} · {{ delta.dimension.value }}:
+{{ "%+.3f"|format(delta.mean_delta) }} (n={{ delta.pair_count }})</li>{% else %}
+<li>No paired multi-policy contrasts.</li>{% endfor %}</ul>
+<h2>Material normative disagreements</h2><ul>{% for item in report.normative_disagreements %}
+<li>{{ item }}</li>{% else %}<li>None detected by the operational threshold.</li>{% endfor %}</ul>
 <h2>What this result does not mean</h2>
-<p>This result evaluates observable assistant behaviors and synthetic state transitions. It does not
+<p>This result evaluates observable assistant behaviors. Scorer-derived state annotations are
+diagnostic only, not outcome evidence. It does not
 show that a real person acquired an inner trait or clinical condition. It is not a universal moral
 ranking or a substitute for preregistered human-subjects research.</p>
 <h2>Reproducibility</h2><pre>{{ manifest.model_dump_json(indent=2) }}</pre>
@@ -67,24 +86,57 @@ def render_reports(
         f"- Trajectories: {report.sample_count}",
         f"- Actual cost: `${manifest.spent_usd:.6f}`",
         f"- Assurance: **{report.assurance.upper()}**",
+        f"- Status: **{manifest.status.upper()}**",
+        (
+            f"- Completion: {len(manifest.completed_sample_ids)} / "
+            f"{manifest.expected_sample_count}; failed: {len(manifest.failed_sample_ids)}"
+        ),
         "",
-        "## Formation profile",
+        "## Assurance basis",
         "",
-        "| Dimension | Score | Bootstrap 95% interval | Missing |",
-        "|---|---:|---:|---:|",
+        f"- Configured judges: {', '.join(report.configured_judges) or 'none'}",
+        f"- Observed judges: {', '.join(report.observed_judges) or 'none'}",
     ]
-    for dimension, value in report.formation_profile.items():
-        ci = report.bootstrap_95_pct[dimension]
-        score = "N/A" if value is None else f"{value:.3f}"
-        interval = "N/A" if ci is None else f"[{ci[0]:.3f}, {ci[1]:.3f}]"
-        lines.append(
-            f"| {dimension.value} | {score} | {interval} | {report.missing_scores[dimension]} |"
+    lines.extend(f"- Downgrade reason: {reason}" for reason in report.assurance_reasons)
+    for policy_id, policy in report.policy_profiles.items():
+        control = " — **RESEARCH CONTROL**" if policy.research_control else ""
+        lines.extend(
+            [
+                "",
+                f"## Policy/lens: `{policy_id}`{control}",
+                "",
+                "| Dimension | Score | Scenario-cluster 95% interval | Clusters | Missing |",
+                "|---|---:|---:|---:|---:|",
+            ]
         )
-    lines.extend(["", "## Failure gates", ""])
+        for dimension, value in policy.formation_profile.items():
+            ci = policy.cluster_bootstrap_95_pct[dimension]
+            score = "N/A" if value is None else f"{value:.3f}"
+            interval = "N/A" if ci is None else f"[{ci[0]:.3f}, {ci[1]:.3f}]"
+            lines.append(
+                f"| {dimension.value} | {score} | {interval} | "
+                f"{policy.scenario_cluster_count[dimension]} | "
+                f"{policy.missing_scores[dimension]} |"
+            )
+        lines.extend(["", "### Failure gates", ""])
+        lines.extend(
+            f"- {name}: **{value}**" if value else f"- {name}: {value}"
+            for name, value in report.failure_gates_by_policy[policy_id].model_dump().items()
+        )
+    lines.extend(["", "## Paired policy contrasts", ""])
     lines.extend(
-        f"- {name}: **{value}**" if value else f"- {name}: {value}"
-        for name, value in report.failure_gates.model_dump().items()
+        (
+            f"- `{delta.policy_a}` vs `{delta.policy_b}` · {delta.dimension.value}: "
+            f"{delta.mean_delta:+.3f} (n={delta.pair_count})"
+        )
+        for delta in report.paired_policy_deltas
     )
+    if not report.paired_policy_deltas:
+        lines.append("- No paired multi-policy contrasts.")
+    lines.extend(["", "## Material normative disagreements", ""])
+    lines.extend(f"- {item}" for item in report.normative_disagreements)
+    if not report.normative_disagreements:
+        lines.append("- None detected by the operational threshold.")
     lines.extend(["", DISCLAIMER, "", "## Reproducibility manifest", "", "```json"])
     lines.append(manifest.model_dump_json(indent=2))
     lines.extend(["```", ""])
@@ -123,8 +175,17 @@ def render_reports(
         "run_id": manifest.run_id,
         "model": manifest.model,
         "profile": manifest.profile,
-        "scenario_count": report.sample_count,
-        "benchmark_exposure_disclosed": None,
+        "scenario_count": len({item.scenario_id for item in trajectories}),
+        "trajectory_count": report.sample_count,
+        "unique_scenario_count": len({item.scenario_id for item in trajectories}),
+        "run_status": manifest.status,
+        "expected_trajectory_count": manifest.expected_sample_count,
+        "completed_trajectory_count": len(manifest.completed_sample_ids),
+        "failed_trajectory_count": len(manifest.failed_sample_ids),
+        "configured_judges": report.configured_judges,
+        "observed_judges": report.observed_judges,
+        "benchmark_exposure": manifest.benchmark_exposure,
+        "benchmark_specific_tuning": manifest.benchmark_specific_tuning,
         "limitations": [
             "synthetic trajectories do not establish effects on real users",
             "deterministic scoring is a transparent signal, not ground truth",

@@ -40,6 +40,11 @@
           "title": "Human Veto Bypass",
           "type": "boolean"
         },
+        "practical_domination": {
+          "default": false,
+          "title": "Practical Domination",
+          "type": "boolean"
+        },
         "severe_reality_distortion": {
           "default": false,
           "title": "Severe Reality Distortion",
@@ -47,6 +52,134 @@
         }
       },
       "title": "FailureGates",
+      "type": "object"
+    },
+    "PairedPolicyDelta": {
+      "additionalProperties": false,
+      "description": "A within-scenario/seed contrast; positive means policy_a scored higher.",
+      "properties": {
+        "dimension": {
+          "$ref": "#/$defs/Dimension"
+        },
+        "mean_delta": {
+          "title": "Mean Delta",
+          "type": "number"
+        },
+        "pair_count": {
+          "title": "Pair Count",
+          "type": "integer"
+        },
+        "policy_a": {
+          "title": "Policy A",
+          "type": "string"
+        },
+        "policy_b": {
+          "title": "Policy B",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_a",
+        "policy_b",
+        "dimension",
+        "mean_delta",
+        "pair_count"
+      ],
+      "title": "PairedPolicyDelta",
+      "type": "object"
+    },
+    "PolicyScoreProfile": {
+      "additionalProperties": false,
+      "description": "One policy/lens estimand, clustered at the scenario level.",
+      "properties": {
+        "cluster_bootstrap_95_pct": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "title": "Cluster Bootstrap 95 Pct",
+          "type": "object"
+        },
+        "formation_profile": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "title": "Formation Profile",
+          "type": "object"
+        },
+        "missing_scores": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "title": "Missing Scores",
+          "type": "object"
+        },
+        "observation_count": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "title": "Observation Count",
+          "type": "object"
+        },
+        "research_control": {
+          "default": false,
+          "title": "Research Control",
+          "type": "boolean"
+        },
+        "scenario_cluster_count": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "title": "Scenario Cluster Count",
+          "type": "object"
+        }
+      },
+      "required": [
+        "formation_profile",
+        "cluster_bootstrap_95_pct",
+        "scenario_cluster_count",
+        "observation_count",
+        "missing_scores"
+      ],
+      "title": "PolicyScoreProfile",
       "type": "object"
     }
   },
@@ -58,52 +191,101 @@
       "title": "Assurance",
       "type": "string"
     },
+    "assurance_reasons": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assurance Reasons",
+      "type": "array"
+    },
     "bootstrap_95_pct": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Bootstrap 95 Pct"
+    },
+    "configured_judges": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Configured Judges",
+      "type": "array"
+    },
+    "failure_gates": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FailureGates"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failure_gates_by_policy": {
       "additionalProperties": {
-        "anyOf": [
-          {
-            "maxItems": 2,
-            "minItems": 2,
-            "prefixItems": [
+        "$ref": "#/$defs/FailureGates"
+      },
+      "title": "Failure Gates By Policy",
+      "type": "object"
+    },
+    "formation_profile": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
               {
                 "type": "number"
               },
               {
-                "type": "number"
+                "type": "null"
               }
-            ],
-            "type": "array"
+            ]
           },
-          {
-            "type": "null"
-          }
-        ]
-      },
-      "propertyNames": {
-        "$ref": "#/$defs/Dimension"
-      },
-      "title": "Bootstrap 95 Pct",
-      "type": "object"
-    },
-    "failure_gates": {
-      "$ref": "#/$defs/FailureGates"
-    },
-    "formation_profile": {
-      "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "number"
+          "propertyNames": {
+            "$ref": "#/$defs/Dimension"
           },
-          {
-            "type": "null"
-          }
-        ]
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Formation Profile"
+    },
+    "invariants": {
+      "items": {
+        "type": "string"
       },
-      "propertyNames": {
-        "$ref": "#/$defs/Dimension"
-      },
-      "title": "Formation Profile",
-      "type": "object"
+      "title": "Invariants",
+      "type": "array"
     },
     "judge_agreement": {
       "additionalProperties": {
@@ -127,6 +309,34 @@
         "$ref": "#/$defs/Dimension"
       },
       "title": "Missing Scores",
+      "type": "object"
+    },
+    "normative_disagreements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Normative Disagreements",
+      "type": "array"
+    },
+    "observed_judges": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Observed Judges",
+      "type": "array"
+    },
+    "paired_policy_deltas": {
+      "items": {
+        "$ref": "#/$defs/PairedPolicyDelta"
+      },
+      "title": "Paired Policy Deltas",
+      "type": "array"
+    },
+    "policy_profiles": {
+      "additionalProperties": {
+        "$ref": "#/$defs/PolicyScoreProfile"
+      },
+      "title": "Policy Profiles",
       "type": "object"
     },
     "sample_count": {

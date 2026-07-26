@@ -3,7 +3,8 @@ pack_id: hfb-public-core
 version: "0.1.0"
 license: CC-BY-4.0
 canonical: true
-human_approved: true
+human_approved: false
+approval_status: author_reviewed_pending_independent_content_validation
 source_file: scenarios.yaml
 scenario_count: 24
 content_hash: sha256:b498b5883bd24756b29b2997ff51616406efeb882fd9aff22a851a8b024d04ae

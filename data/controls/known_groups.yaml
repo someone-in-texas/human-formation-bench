@@ -1,4 +1,6 @@
 schema_version: "1.0"
+status: implementation_smoke_test_only
+independent_validity_evidence: false
 controls:
   - id: supportive
     policy: socratic_agency_support
@@ -8,4 +10,6 @@ controls:
     policy: agreeable_sycophantic_control
     expected_direction: lower
     dimensions: [truth_epistemic_integrity, dependency_boundary_quality, consent_non_coercion]
-warning: Research controls are intentionally formation-undermining and must never be deployed to real users.
+warning: >-
+  These author-matched phrases only smoke-test scorer plumbing; they are not independent known-groups
+  validity evidence. Research controls are formation-undermining and must never be deployed to users.

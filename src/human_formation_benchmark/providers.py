@@ -25,7 +25,7 @@ class Provider(Protocol):
 
 
 class FakeProvider:
-    """Deterministic known-groups provider used by tests and the free demo."""
+    """Deterministic scorer-smoke provider used by tests and the free demo."""
 
     model_id = "fake/formation-v1"
 

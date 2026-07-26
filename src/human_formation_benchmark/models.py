@@ -136,6 +136,28 @@ class Rubric(StrictModel):
     edge_cases: list[str] = Field(min_length=1)
     examples: list[str] = Field(min_length=1)
     sources: list[str] = Field(min_length=1)
+    included_content: list[str] = Field(min_length=1)
+    excluded_content: list[str] = Field(min_length=1)
+    neighboring_constructs: list[Dimension] = Field(min_length=1)
+    score_anchors: dict[str, str]
+    missingness_rules: dict[str, str]
+    cultural_risks: list[str] = Field(min_length=1)
+    source_use: str
+    license_review: str
+
+    @field_validator("score_anchors")
+    @classmethod
+    def anchors_cover_ordinal_scale(cls, value: dict[str, str]) -> dict[str, str]:
+        if set(value) != {"0", "1", "2", "3", "4"}:
+            raise ValueError("rubric must define behavioral anchors for scores 0 through 4")
+        return value
+
+    @field_validator("missingness_rules")
+    @classmethod
+    def missingness_is_explicit(cls, value: dict[str, str]) -> dict[str, str]:
+        if set(value) != {"insufficient_evidence", "not_applicable"}:
+            raise ValueError("rubric must distinguish insufficient evidence from not applicable")
+        return value
 
 
 class Policy(StrictModel):
@@ -150,9 +172,66 @@ class Policy(StrictModel):
 class Constitution(StrictModel):
     schema_version: str = SCHEMA_VERSION
     id: str
-    thin_floor: list[str]
+    thin_floor_version: str | None = None
+    thin_floor: list[str] = Field(default_factory=list)
     commitments: list[str]
     research_control: bool = False
+    contested_interpretations: list[str] = Field(default_factory=list)
+
+
+class WorldviewLens(StrictModel):
+    """Versioned self-description kept distinct from thin-floor evaluation."""
+
+    schema_version: str = SCHEMA_VERSION
+    id: str
+    version: str
+    perspective: Literal[
+        "christian",
+        "secular_pluralist",
+        "virtue_ethical",
+        "care_ethical",
+        "communal_duty",
+        "individual_self_direction",
+    ]
+    self_description: str
+    commitments: list[str] = Field(min_length=2)
+    characteristic_reasons: list[str] = Field(min_length=2)
+    internal_disagreements: list[str] = Field(min_length=1)
+    prohibited_caricatures: list[str] = Field(min_length=1)
+    lens_specific_expectations: list[str] = Field(min_length=2)
+    sources: list[str] = Field(min_length=1)
+    source_license_review: str
+    interpretive_authority: str
+    reviewer_provenance: list[str] = Field(min_length=1)
+    validation_status: Literal["author_draft", "independent_reviewed", "community_reviewed"]
+
+
+class PerspectiveContrast(StrictModel):
+    id: str
+    perspective: Literal[
+        "christian",
+        "secular_pluralist",
+        "virtue_ethical",
+        "care_ethical",
+        "communal_duty",
+        "individual_self_direction",
+    ]
+    role: Literal["positive", "adversarial"]
+    shared_choice: str
+    mechanism: str
+    acceptable_rationales: list[str] = Field(min_length=1)
+    prohibited_caricatures: list[str] = Field(min_length=1)
+    reviewer_status: Literal["author_draft", "independent_reviewed"]
+
+
+class AdversarialChallenge(StrictModel):
+    id: str
+    attack_family: str
+    response: str
+    expected_max_score: int = Field(ge=0, le=4)
+    expected_gate: str | None = None
+    expected_flags: list[str] = Field(default_factory=list)
+    private_rotation_required: bool = True
 
 
 class JudgeResult(StrictModel):
@@ -197,7 +276,11 @@ class Trajectory(StrictModel):
     messages: list[Message]
     initial_state: UserState
     final_state: UserState
+    state_evidence_status: Literal["scorer_derived_diagnostic_not_outcome"] = (
+        "scorer_derived_diagnostic_not_outcome"
+    )
     judge_results: list[JudgeResult]
+    failure_gates: FailureGates | None = None
     cost_usd: float = Field(ge=0)
     latency_ms: float = Field(ge=0)
     errors: list[str] = Field(default_factory=list)
@@ -253,17 +336,47 @@ class FailureGates(StrictModel):
     covert_persuasion: bool = False
     severe_reality_distortion: bool = False
     human_veto_bypass: bool = False
+    practical_domination: bool = False
 
 
 class ScoreReport(StrictModel):
     schema_version: str = SCHEMA_VERSION
-    formation_profile: dict[Dimension, float | None]
-    bootstrap_95_pct: dict[Dimension, tuple[float, float] | None]
-    failure_gates: FailureGates
+    formation_profile: dict[Dimension, float | None] | None
+    bootstrap_95_pct: dict[Dimension, tuple[float, float] | None] | None
+    policy_profiles: dict[str, PolicyScoreProfile] = Field(default_factory=dict)
+    paired_policy_deltas: list[PairedPolicyDelta] = Field(default_factory=list)
+    normative_disagreements: list[str] = Field(default_factory=list)
+    invariants: list[str] = Field(default_factory=list)
+    failure_gates: FailureGates | None
+    failure_gates_by_policy: dict[str, FailureGates] = Field(default_factory=dict)
     judge_agreement: dict[str, float | None]
+    observed_judges: list[str] = Field(default_factory=list)
+    configured_judges: list[str] = Field(default_factory=list)
     sample_count: int
     missing_scores: dict[Dimension, int]
     assurance: str
+    assurance_reasons: list[str] = Field(default_factory=list)
+
+
+class PolicyScoreProfile(StrictModel):
+    """One policy/lens estimand, clustered at the scenario level."""
+
+    formation_profile: dict[Dimension, float | None]
+    cluster_bootstrap_95_pct: dict[Dimension, tuple[float, float] | None]
+    scenario_cluster_count: dict[Dimension, int]
+    observation_count: dict[Dimension, int]
+    missing_scores: dict[Dimension, int]
+    research_control: bool = False
+
+
+class PairedPolicyDelta(StrictModel):
+    """A within-scenario/seed contrast; positive means policy_a scored higher."""
+
+    policy_a: str
+    policy_b: str
+    dimension: Dimension
+    mean_delta: float
+    pair_count: int
 
 
 class RunManifest(StrictModel):
@@ -278,7 +391,15 @@ class RunManifest(StrictModel):
     policies: list[str]
     seeds: list[int]
     scenario_pack_hash: str
+    scenario_pack_id: str = "hfb-public-core"
+    scenario_pack_canonical: bool = True
+    scenario_pack_disclosure: Literal["public", "private"] = "public"
+    benchmark_exposure: Literal[
+        "not_provided", "public_seen", "public_tuned", "private_unseen", "mixed"
+    ] = "not_provided"
+    benchmark_specific_tuning: bool | None = None
     config_hash: str
+    run_family_hash: str
     git_commit: str
     package_version: str
     python_version: str
@@ -287,6 +408,7 @@ class RunManifest(StrictModel):
     hard_stop: bool
     reserve_fraction: float
     spent_usd: float = 0
+    expected_sample_count: int = 0
     completed_sample_ids: list[str] = Field(default_factory=list)
     failed_sample_ids: list[str] = Field(default_factory=list)
     shard_index: int = 0
@@ -302,6 +424,7 @@ class ScenarioPackManifest(StrictModel):
     license: str = "CC-BY-4.0"
     canonical: bool
     human_approved: bool
+    disclosure: Literal["public", "private"] = "public"
     scenario_ids: list[str]
     content_hash: str
     generated_at: datetime

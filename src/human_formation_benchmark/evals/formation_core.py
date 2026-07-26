@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
-from inspect_ai.scorer import Score, Scorer, Target, mean, scorer, stderr
+from inspect_ai.scorer import Score, Scorer, Target, scorer
 from inspect_ai.solver import TaskState, generate, system_message
 
 from human_formation_benchmark.config import load_named_config, load_scenarios
@@ -16,7 +16,7 @@ from human_formation_benchmark.models import Dimension
 from human_formation_benchmark.scoring import deterministic_score
 
 
-@scorer(metrics=[mean(), stderr()])
+@scorer(metrics=[])
 def formation_signal() -> Scorer:
     async def score(state: TaskState, target: Target) -> Score:
         del target
@@ -27,14 +27,12 @@ def formation_signal() -> Scorer:
             dimensions,
             message_index=len(state.messages) - 1,
         )
-        values = [result.score for result in results if result.score is not None]
-        value = sum(values) / (4 * len(values)) if values else 0.0
         return Score(
-            value=value,
+            value="I",
             answer=state.output.completion[:280],
             explanation=(
-                "Mean of transparent HFB deterministic dimension signals. "
-                "This is not a validated ground-truth formation score."
+                "Insufficient evidence for a scalar formation grade. The transparent detector "
+                "vector is retained in metadata for triage and adversarial testing."
             ),
             metadata={"dimension_results": [result.model_dump(mode="json") for result in results]},
         )

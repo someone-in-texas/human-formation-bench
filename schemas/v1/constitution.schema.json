@@ -10,6 +10,13 @@
       "title": "Commitments",
       "type": "array"
     },
+    "contested_interpretations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Contested Interpretations",
+      "type": "array"
+    },
     "id": {
       "title": "Id",
       "type": "string"
@@ -30,11 +37,22 @@
       },
       "title": "Thin Floor",
       "type": "array"
+    },
+    "thin_floor_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Thin Floor Version"
     }
   },
   "required": [
     "id",
-    "thin_floor",
     "commitments"
   ],
   "title": "Constitution",

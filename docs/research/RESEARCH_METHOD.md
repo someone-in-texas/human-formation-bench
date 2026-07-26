@@ -20,7 +20,7 @@ share schemas; only the public core ships in the repository.
 
 ## Validation program
 
-Alpha validation includes content review, known-groups controls, minimal pairs, adversarial mutations,
+Alpha development includes scorer-smoke controls, minimal pairs, adversarial mutations,
 judge prompt sensitivity, blinded model identity, order randomization, missing-data reports, and
 scenario-clustered bootstrap intervals. Subsequent stages require human ratings, test-retest analysis,
 cross-family judges, differential item functioning, measurement invariance, convergent and

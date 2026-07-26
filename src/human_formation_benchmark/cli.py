@@ -7,14 +7,22 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from typing import Annotated, Any, NoReturn
+from typing import Annotated, Any, Literal, NoReturn
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
 from . import __version__
-from .config import list_profiles, load_prices, load_profile, load_rubrics, load_scenarios
+from .config import (
+    list_profiles,
+    load_prices,
+    load_profile,
+    load_rubrics,
+    load_scenarios,
+    validate_challenge_coverage,
+    validate_foundations,
+)
 from .models import Dimension
 from .pack import build_manifest, pack_hash, validate_pack
 from .pricing import estimate_run
@@ -110,6 +118,8 @@ def validate_command(json_output: Annotated[bool, typer.Option("--json")] = Fals
         rubrics = load_rubrics()
         profiles = list_profiles()
         sources = check_registry()
+        constitutions, lenses = validate_foundations()
+        perspective_contrasts, adversarial_challenges = validate_challenge_coverage()
         covered = {rubric.dimension for rubric in rubrics}
         if covered != set(Dimension):
             raise ValueError("rubrics do not cover every core dimension exactly")
@@ -119,6 +129,10 @@ def validate_command(json_output: Annotated[bool, typer.Option("--json")] = Fals
             "rubrics": len(rubrics),
             "profiles": len(profiles),
             "sources": len(sources),
+            "constitutions": constitutions,
+            "lenses": lenses,
+            "perspective_contrasts": perspective_contrasts,
+            "adversarial_challenges": adversarial_challenges,
             "pack_hash": pack_hash(),
         }
     except Exception as error:
@@ -208,6 +222,10 @@ def plan(
         float | None, typer.Option(help="USD per million output tokens.")
     ] = None,
     max_samples: Annotated[int | None, typer.Option(min=1)] = None,
+    pack: Annotated[
+        Path | None,
+        typer.Option(exists=True, dir_okay=False, help="External private scenario-pack YAML."),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Print a no-network call graph and low/base/high cost estimate."""
@@ -224,7 +242,11 @@ def plan(
         model,
         price,
         budget,
-        sample_count=min(run_profile.scenario_limit, max_samples or run_profile.scenario_limit),
+        sample_count=min(
+            run_profile.scenario_limit,
+            max_samples or run_profile.scenario_limit,
+            len(load_scenarios(pack_path=pack.resolve() if pack else None)),
+        ),
     )
     _emit(estimate, json_output=json_output)
 
@@ -245,11 +267,15 @@ def _options(
     input_cost: float | None,
     output_cost: float | None,
     policies: list[str] | None,
+    pack: Path | None,
+    benchmark_exposure: str,
+    benchmark_specific_tuning: bool | None,
 ) -> RunOptions:
+    configured_judges = judge or load_profile(profile).judges
     return RunOptions(
         profile=profile,
         model=model,
-        judge_models=judge or ["deterministic-v1"],
+        judge_models=configured_judges,
         budget_usd=budget_usd,
         hard_stop=hard_stop,
         max_samples=max_samples,
@@ -262,6 +288,9 @@ def _options(
         input_per_million_usd=input_cost,
         output_per_million_usd=output_cost,
         policies=policies,
+        pack_path=pack.resolve() if pack else None,
+        benchmark_exposure=benchmark_exposure,
+        benchmark_specific_tuning=benchmark_specific_tuning,
     )
 
 
@@ -282,6 +311,18 @@ def run(
     input_cost: Annotated[float | None, typer.Option()] = None,
     output_cost: Annotated[float | None, typer.Option()] = None,
     policy: Annotated[list[str] | None, typer.Option()] = None,
+    pack: Annotated[
+        Path | None,
+        typer.Option(exists=True, dir_okay=False, help="External private scenario-pack YAML."),
+    ] = None,
+    benchmark_exposure: Annotated[
+        Literal["not_provided", "public_seen", "public_tuned", "private_unseen", "mixed"],
+        typer.Option(help="Required disclosure for comparative publication."),
+    ] = "not_provided",
+    benchmark_specific_tuning: Annotated[
+        bool | None,
+        typer.Option("--benchmark-specific-tuning/--no-benchmark-specific-tuning"),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Run a resumable evaluation; fake provider is the no-cost default."""
@@ -302,12 +343,25 @@ def run(
         input_cost,
         output_cost,
         policy,
+        pack,
+        benchmark_exposure,
+        benchmark_specific_tuning,
     )
     try:
         path = asyncio.run(run_benchmark(options))
     except Exception as error:
         _fail(f"{type(error).__name__}: {error}", 1)
-    _emit({"run_dir": str(path), "report": str(path / "report.html")}, json_output=json_output)
+    manifest = RunStore(path).load_manifest()
+    _emit(
+        {
+            "run_dir": str(path),
+            "report": str(path / "report.html"),
+            "status": manifest.status,
+        },
+        json_output=json_output,
+    )
+    if manifest.status != "completed":
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -338,19 +392,40 @@ def resume(
         input_per_million_usd=raw.get("input_per_million_usd"),
         output_per_million_usd=raw.get("output_per_million_usd"),
         policies=raw.get("policies"),
+        pack_path=Path(config["pack_path"]).resolve() if config.get("pack_path") else None,
+        benchmark_exposure=manifest.benchmark_exposure,
+        benchmark_specific_tuning=manifest.benchmark_specific_tuning,
     )
     try:
         path = asyncio.run(run_benchmark(options, resume_dir=run_dir))
     except Exception as error:
         _fail(f"{type(error).__name__}: {error}", 1)
-    _emit({"run_dir": str(path)}, json_output=json_output)
+    resumed = RunStore(path).load_manifest()
+    _emit({"run_dir": str(path), "status": resumed.status}, json_output=json_output)
+    if resumed.status != "completed":
+        raise typer.Exit(1)
 
 
 @app.command()
 def score(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)]) -> None:
     store = RunStore(run_dir)
     manifest = store.load_manifest()
-    report = aggregate(store.trajectories(), assurance=load_profile(manifest.profile).assurance)
+    report = aggregate(
+        store.trajectories(),
+        assurance=load_profile(manifest.profile).assurance,
+        configured_judges=manifest.judge_models,
+        target_model=manifest.model,
+    )
+    if manifest.status != "completed":
+        report = report.model_copy(
+            update={
+                "assurance": "unavailable-partial",
+                "assurance_reasons": [
+                    *report.assurance_reasons,
+                    f"run status is {manifest.status}",
+                ],
+            }
+        )
     (run_dir / "score-report.json").write_text(
         report.model_dump_json(indent=2) + "\n",
         encoding="utf-8",
@@ -384,7 +459,11 @@ def adjudicate(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=Fa
 def compare(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)]) -> None:
     """Print paired policy means by dimension for one multi-policy run."""
 
-    trajectories = RunStore(run_dir).trajectories()
+    store = RunStore(run_dir)
+    manifest = store.load_manifest()
+    if manifest.benchmark_exposure == "not_provided":
+        _fail("comparative output requires --benchmark-exposure on the original run")
+    trajectories = store.trajectories()
     buckets: dict[tuple[str, str], list[int]] = {}
     for trajectory in trajectories:
         for result in trajectory.judge_results:
@@ -403,7 +482,22 @@ def report(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)
     store = RunStore(run_dir)
     manifest = store.load_manifest()
     trajectories = store.trajectories()
-    score_report = aggregate(trajectories, assurance=load_profile(manifest.profile).assurance)
+    score_report = aggregate(
+        trajectories,
+        assurance=load_profile(manifest.profile).assurance,
+        configured_judges=manifest.judge_models,
+        target_model=manifest.model,
+    )
+    if manifest.status != "completed":
+        score_report = score_report.model_copy(
+            update={
+                "assurance": "unavailable-partial",
+                "assurance_reasons": [
+                    *score_report.assurance_reasons,
+                    f"run status is {manifest.status}",
+                ],
+            }
+        )
     render_reports(run_dir, manifest, score_report, trajectories)
     store.export_columnar(trajectories)
     console.print(run_dir / "report.html")
@@ -415,17 +509,19 @@ def export(
     destination: Annotated[Path, typer.Option()] = Path("hfb-export"),
 ) -> None:
     destination.mkdir(parents=True, exist_ok=True)
-    for name in [
+    manifest = RunStore(run_dir).load_manifest()
+    names = [
         "manifest.json",
         "score-report.json",
-        "results.jsonl",
         "scores.csv",
-        "trajectories.parquet",
         "scores.parquet",
         "report.md",
         "report.html",
         "benchmark-card.json",
-    ]:
+    ]
+    if manifest.scenario_pack_disclosure != "private":
+        names.extend(["results.jsonl", "trajectories.parquet"])
+    for name in names:
         source = run_dir / name
         if source.exists():
             shutil.copy2(source, destination / name)
