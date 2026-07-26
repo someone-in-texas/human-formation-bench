@@ -47,3 +47,19 @@ passed its stated automated check; it does not imply construct validity.
 
 The unchecked human-validation and live-provider items are deliberate alpha limitations, not silent
 omissions. Release automation must fail while any required reviewer reports Critical or High findings.
+
+## Gravity experimental extension
+
+- [x] General built-in declarative extension seam, contained asset allowlist, and fingerprints exist.
+- [x] Gravity has strict typed envelopes, a small synthetic vertical slice, observable events,
+  deterministic signals, and explicit research-control opt-in.
+- [x] Gravity theory, philosophy, claims, source limits, security, misuse, and accessibility
+  documentation exists.
+- [ ] Calibrated Gravity model judges and human adjudication are implemented.
+- [ ] A large independently reviewed scenario pack exists.
+- [ ] Ordinal Gravity constructs have human-rater reliability and validity evidence.
+- [ ] Human-subject evidence supports any claim about durable human outcomes.
+- [ ] All thick worldview lenses have migrated through one reviewed extension contract.
+
+Gravity's unchecked items are staged research, not implied capabilities. Deterministic signals are
+triage evidence rather than construct scores.

@@ -10,6 +10,19 @@ rubrics also carry their own versions.
 - Vector-first 16-dimension formation rubric and 24-scenario public alpha pack.
 - Fake-provider, Inspect-native task, cost planning, budgets, resume, caching, sharding, and reports.
 - Research registry, pluralist foundations, threat model, governance, tests, CI, and release tooling.
+- Declarative built-in extension descriptors with contained asset resolution, deterministic
+  fingerprints, extension-aware CLI planning and execution, and explicit research-control opt-in.
+- Chosen Gravity `0.1.0` experimental vertical slice with typed scenario envelopes, observable-event
+  transitions, transfer records, deterministic triage signals, safe reference policies, and
+  pre-validation documentation.
+
+### Changed
+
+- Worldview perspective identifiers are data-extensible slugs, while the current six required
+  perspectives and all existing Christianity identifiers and behavior remain compatible.
+- The required worldview set is declared in reviewed configuration rather than a closed Python enum.
+- Gravity model judging, large packs, human calibration, and validated ordinal scoring are explicitly
+  staged rather than represented as completed capabilities.
 
 ### Corrected
 
