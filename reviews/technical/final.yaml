@@ -1,0 +1,179 @@
+reviewer_role: technical_reproducibility
+reviewed_commit: 328288e9bba99e846f75b2effea43834f7372b93
+verdict: approve_with_non_blocking_reservations
+findings: []
+validation_summary:
+  scope: >-
+    Formal re-review of TECH-003 and TECH-004 at the exact reviewed commit, including streaming
+    execution, aggregation and export paths; per-record result commitments on resume and shard merge;
+    the mandatory repository quality gates; and the release SBOM's clean-runtime construction and
+    reproducibility properties. No Critical or High technical/reproducibility finding remains.
+  commands:
+    - uv run ruff format --check .
+    - uv run ruff check .
+    - uv run mypy
+    - uv run pytest
+    - >-
+      uv run pytest -q
+      tests/integration/test_runner.py::test_shard_merge_rejects_truncated_completed_results
+      tests/integration/test_runner.py::test_shard_merge_rejects_content_modified_results
+    - >-
+      Custom resume content-tamper probe and 100,000-record lazy aggregation probe under tracemalloc
+    - uv sync --all-groups --extra release --frozen
+    - uv build
+    - >-
+      uv run python scripts/build_release_sbom.py --wheel
+      dist/human_formation_benchmark-0.1.0.dev0-py3-none-any.whl --output
+      dist/review-sbom.json
+    - >-
+      Repeat SBOM generation and compare the two artifacts byte for byte
+  result: >-
+    Formatting, lint, and typing passed; 64 tests passed and one intentionally gated live-provider
+    test was skipped. Both targeted shard-integrity tests passed. Resume rejected a same-ID confidence
+    edit with "trajectory content hash mismatch". Lazy aggregation of 100,000 repeated-key records
+    peaked at 0.023 MiB of traced allocations, confirming that trajectory objects are not retained.
+    The clean-runtime CycloneDX 1.6 SBOM contained 88 runtime components, excluded the five forbidden
+    development tools, omitted serial and timestamp fields, and was byte-identical across two builds
+    with SHA-256 372793a3494078a8b00f3967a10742c932e5f71d67876ad327d810f4e20499a9.
+
+resolved_findings:
+  TECH-003:
+    status: resolved
+    resolution: >-
+      The runner no longer constructs or retains a whole-run trajectory dictionary or list. Resume
+      streams persisted records to recover completion state; final scoring, report rendering, and
+      columnar export each consume fresh iterators; shard merge copies records by streaming; and
+      Parquet conversion is bounded to 1,000-record batches. Aggregation retains sufficient statistics
+      rather than JudgeResult-bearing trajectory objects.
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 505-507
+      - path: src/human_formation_benchmark/runner.py
+        lines: 640-669
+      - path: src/human_formation_benchmark/runner.py
+        lines: 673-754
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 353-414
+      - path: src/human_formation_benchmark/storage.py
+        lines: 131-187
+    validation: >-
+      Static inspection found no whole-trajectory corpus in run or merge. A lazy generator supplying
+      100,000 trajectory records with bounded scenario/policy/seed keys completed aggregation at
+      0.023 MiB peak traced allocation. The full integration suite also exercised run, resume,
+      reporting, Parquet, DuckDB, and shard merge successfully.
+
+  TECH-004:
+    status: resolved
+    resolution: >-
+      Each successfully persisted trajectory now receives a canonical content hash in the manifest.
+      The common ledger verifier streams JSONL and rejects duplicate IDs, content-hash mismatches, and
+      any disagreement among persisted IDs, completed IDs, and hash-ledger keys. Both resume and merge
+      invoke that verifier before trusting prior results, and the merged manifest carries the verified
+      per-record commitments.
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 264-282
+      - path: src/human_formation_benchmark/runner.py
+        lines: 505-507
+      - path: src/human_formation_benchmark/runner.py
+        lines: 598-613
+      - path: src/human_formation_benchmark/runner.py
+        lines: 673-730
+      - path: src/human_formation_benchmark/models.py
+        lines: 435-439
+      - path: tests/integration/test_runner.py
+        lines: 70-117
+    validation: >-
+      The checked-in deletion and content-modification tests passed. An additional independent probe
+      changed one persisted JudgeResult confidence while retaining its trajectory ID; resume failed
+      closed with the expected content-hash mismatch before returning the completed run.
+
+  TECH-005:
+    status: resolved
+    resolution: >-
+      Positive-cost reservations remain serialized, so a provider-reported deviation that consumes
+      the available budget prevents another paid call from being admitted. The prior adversarial
+      validation and pricing regression tests remain green at this commit.
+    evidence:
+      - path: src/human_formation_benchmark/pricing.py
+        lines: 91-130
+      - path: tests/unit/test_pricing.py
+        lines: 45-86
+
+non_blocking_reservations:
+  - id: TECH-R001
+    severity: Medium
+    title: Plan estimates remain heuristic and --no-hard-stop has no separate execution semantics
+    reservation: >-
+      estimate_run still uses fixed token assumptions rather than the runner's maximum reservations,
+      and hard_stop is recorded but not consulted. Align plan output with actual reservations and
+      either implement --no-hard-stop or remove the option.
+
+  - id: TECH-R002
+    severity: Medium
+    title: Shared-cache provenance and incremental accounting remain incomplete
+    reservation: >-
+      Cache keys still lack an endpoint and full provider-configuration fingerprint. Cache hits retain
+      the original response's cost, latency, and request ID in trajectory totals while manifest
+      incremental spend remains zero. Add provider provenance and distinguish attributable usage from
+      current-run cost.
+
+  - id: TECH-R003
+    severity: Medium
+    title: Operational reports still cannot reconcile token, cache, and latency totals
+    reservation: >-
+      TokenUsage is discarded before Trajectory creation, and reports omit call-level token totals,
+      cache hits, latency summaries, and structured error categories. A call ledger remains necessary
+      for cost and reproducibility audits.
+
+  - id: TECH-R004
+    severity: Medium
+    title: Inspect-native execution cannot select a private pack
+    reservation: >-
+      CLI private-pack execution is protected and transcript-free, but formation_core still loads only
+      packaged public scenarios. Add a contained private-pack task parameter and the same
+      hash/disclosure protections before claiming CLI and Inspect feature parity.
+
+  - id: TECH-R005
+    severity: Low
+    title: Unused dependencies and deterministic-mode semantics remain undocumented
+    reservation: >-
+      Several direct dependencies remain unused by package imports, and PyArrow remains mandatory for
+      JSONL-only users. RunOptions.deterministic is unused while timestamps and run IDs vary. Remove or
+      justify dependencies and document which scientific outputs are stable.
+
+  - id: TECH-R006
+    severity: Medium
+    title: Streaming paths still retain run-sized sufficient-statistic and ledger state
+    reservation: >-
+      Whole trajectories are no longer retained, resolving the release blocker, but aggregation keeps
+      one paired-policy statistic per distinct policy/scenario/seed/dimension plus every gate-hit
+      example, and the manifest keeps all completed IDs and hashes. Measure a fully distinct-key
+      frontier run and spill or checkpoint these structures if they exceed the documented worker
+      envelope.
+
+  - id: TECH-R007
+    severity: Medium
+    title: The per-record hash ledger has no independent root commitment
+    reservation: >-
+      Editing results alone is detected, but an actor able to replace both results.jsonl and its mutable
+      manifest can recompute the unkeyed hash entries. Add a deterministic shard/root commitment and
+      bind it to an external signature or attestation when artifacts cross trust boundaries.
+
+  - id: TECH-R008
+    severity: Medium
+    title: Result append and manifest-ledger update are not one crash-consistent transaction
+    reservation: >-
+      A result line is flushed before its completed ID and hash are atomically installed in the
+      manifest. A process crash in that window fails closed on resume but leaves an otherwise valid
+      result that cannot be reconciled automatically. Add a journal or recovery protocol that preserves
+      fail-closed integrity without sacrificing resumability.
+
+  - id: TECH-R009
+    severity: Low
+    title: The release SBOM root component omits the package version
+    reservation: >-
+      The clean-runtime SBOM is reproducible and excludes development tooling, but its metadata root
+      identifies human-formation-benchmark without a version, apparently because the project version is
+      dynamic. Populate the built wheel's resolved version in the root component and validate it against
+      the release tag.

@@ -1,0 +1,203 @@
+reviewer_role: psychometrics_methodology
+reviewed_commit: 328288e9bba99e846f75b2effea43834f7372b93
+verdict: approve_with_non_blocking_reservations
+findings: []
+resolved_findings:
+  PSY-001:
+    resolution: >-
+      Resolved for the alpha by failing closed at both configuration and reporting boundaries.
+      CLI options resolve the profile's configured judges, the runner rejects every unavailable
+      model judge before execution, and the assurance calculation compares configured with observed
+      judge identities. A deterministic-only override produces no calibrated model-judge evidence
+      and therefore cannot emit research assurance.
+    evidence:
+      - path: src/human_formation_benchmark/cli.py
+        lines: 255-295
+      - path: src/human_formation_benchmark/runner.py
+        lines: 478-486
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 324-350
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 96-112
+    validation: >-
+      Code inspection confirmed that the configured research-profile model judges are rejected as
+      unavailable before a run can be created. The aggregate fixture with an absent configured judge
+      emitted pre-validation assurance and named the missing judge.
+
+  PSY-002:
+    resolution: >-
+      Resolved at the alpha estimand boundary. Aggregation is a one-pass reducer that keeps distinct
+      policy or lens profiles, excludes a pooled multi-policy headline, accumulates sufficient
+      statistics by policy, dimension, and scenario, and gives each scenario equal weight after
+      averaging its observed turns, seeds, and judges. Scenario-cluster bootstrap intervals,
+      dimension-level observation and cluster counts, missingness, and scenario-seed paired policy
+      contrasts remain visible. The streaming refactor changes storage complexity, not the estimand.
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 242-321
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 353-459
+      - path: src/human_formation_benchmark/runner.py
+        lines: 651-669
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 96-129
+      - path: docs/methodology/SCORING.md
+        lines: 14-20
+    validation: >-
+      The nested synthetic fixture passed with nine observations in one scenario and one in another:
+      the reported point estimate was the equal-scenario value 0.5, not the row-weighted value 0.9,
+      and its interval was 0.0 to 1.0. The multi-policy fixture preserved separate supportive and
+      harmful-control profiles and emitted no pooled formation profile.
+
+  PSY-003:
+    resolution: >-
+      Resolved for alpha through an explicit non-outcome interpretation and faithful horizon
+      execution. Detector-only missing scores generate zero state deltas, simulated states are
+      excluded from assurance and causal claims, and longitudinal scenarios use the profile's full
+      declared horizon. The implementation and documentation continue to call the current state
+      transition a scorer-derived diagnostic rather than independent formation evidence.
+    evidence:
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-17
+      - path: src/human_formation_benchmark/runner.py
+        lines: 41-46
+      - path: src/human_formation_benchmark/runner.py
+        lines: 588-591
+      - path: docs/methodology/SIMULATION.md
+        lines: 1-19
+      - path: tests/integration/test_runner.py
+        lines: 229-298
+    validation: >-
+      Targeted integration tests executed the research and frontier-audit longitudinal fixtures for
+      exactly 15 and 24 assistant turns respectively and detected the delayed sleeper-policy gate.
+      The state-transition unit test confirmed that detector-only results leave user state unchanged.
+
+  PSY-004:
+    resolution: >-
+      Resolved as an alpha release blocker through schema-enforced construct blueprints and a strict
+      validation-status boundary, not by claiming completed construct validation. Rubrics define
+      included and excluded content, neighboring constructs, observable indicators, per-score anchors,
+      missingness rules, cultural risks, source-use limits, and license-review status. The public pack
+      is explicitly not human approved, and all ordinal and content-validity claims remain gated on
+      independent human work.
+    evidence:
+      - path: src/human_formation_benchmark/models.py
+        lines: 128-160
+      - path: rubrics/core.yaml
+        lines: 9-35
+      - path: docs/research/CONSTRUCT_BLUEPRINT.md
+        lines: 1-24
+      - path: data/public_core/manifest.yaml
+        lines: 1-10
+    validation: >-
+      hfb validate passed at the reviewed commit for all 16 rubrics, 24 scenarios, six lenses,
+      twelve perspective contrasts, and the versioned public-pack hash.
+
+  PSY-005:
+    resolution: >-
+      Resolved as an overclaim and alpha blocker. The deterministic component no longer emits ordinal
+      scores at all: every dimension is marked insufficient_evidence and detector-only, with supportive
+      and adverse lexical matches exposed only as flags and a non-score diagnostic index. It therefore
+      cannot produce a formation-profile value or drive state transitions. The known-groups material
+      remains an implementation smoke test rather than validation evidence.
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 145-220
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-17
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 10-54
+      - path: tests/golden/test_golden.py
+        lines: 1-18
+      - path: docs/methodology/SCORING.md
+        lines: 7-12
+    validation: >-
+      Targeted unit tests confirmed that supportive and harmful examples both return only missing
+      ordinal scores, while retaining distinct diagnostic flags, and that those results do not change
+      the simulated state. No inspected report path promotes the internal detector index to a score.
+
+  PSY-006:
+    resolution: >-
+      Resolved as a release blocker by narrowing the intended generalization. The public pack is an
+      English-language author-reviewed alpha sample, not a representative cultural or worldview
+      instrument; group, language, culture, and worldview comparisons are expressly unsupported.
+      Private-pack identifiers are now replaced by deterministic opaque identifiers, but the
+      transformation preserves equality within scenario clusters and therefore does not alter the
+      scenario-weighted estimand or scenario-seed pairings.
+    evidence:
+      - path: data/public_core/manifest.yaml
+        lines: 1-10
+      - path: docs/research/CONSTRUCT_BLUEPRINT.md
+        lines: 9-24
+      - path: src/human_formation_benchmark/runner.py
+        lines: 252-265
+      - path: src/human_formation_benchmark/runner.py
+        lines: 285-343
+      - path: tests/integration/test_runner.py
+        lines: 141-193
+    validation: >-
+      The private-pack integration test passed with pack and scenario sentinels absent from all run
+      and export artifacts. Inspection confirmed that opaque scenario identifiers remain stable for
+      all observations from the same source scenario, preserving clusters while withholding labels.
+
+  PSY-007:
+    resolution: >-
+      Resolved as an assurance blocker rather than as a completed human-rating system. Agreement remains
+      explicitly null, model judges remain unavailable, deterministic evidence is wholly missing on the
+      ordinal scale, and research assurance is unavailable without observed calibrated cross-family
+      judges. Human adjudication, reliability, DIF, invariance, convergent evidence, and discriminant
+      evidence remain declared future work.
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 324-350
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 435-458
+      - path: docs/research/RESEARCH_METHOD.md
+        lines: 21-32
+      - path: docs/project/IMPLEMENTATION_STATUS.md
+        lines: 23-25
+    validation: >-
+      The reviewed code cannot populate Krippendorff alpha or promote detector-only output to
+      research assurance. The implementation-status checklist keeps judge and human calibration
+      visibly incomplete.
+
+validation:
+  commit_verified: 328288e9bba99e846f75b2effea43834f7372b93
+  commands:
+    - uv run hfb validate
+    - uv run pytest tests/unit/test_scoring_simulation.py tests/integration/test_runner.py -q
+  result: >-
+    Asset validation passed. The targeted methodology and end-to-end suite passed 18 tests, including
+    scenario-cluster weighting, policy separation, missing ordinal detector output, unchanged state,
+    private identifier withholding, resume integrity, shard tamper detection, and 15-turn and 24-turn
+    longitudinal execution.
+
+non_blocking_reservations:
+  - >-
+    Paired policy deltas remain descriptive means with pair counts. Before inferential comparisons,
+    add scenario-clustered uncertainty, defensible effect sizes, multiplicity handling, and explicit
+    judge and seed sensitivity. docs/methodology/SCORING.md currently says reports include judge
+    sensitivity and seed variance even though the core report does not yet implement those analyses.
+  - >-
+    Schema-complete anchors are not validated anchors. Independent domain experts, affected
+    stakeholders, and culturally or tradition-competent reviewers have not completed blinded
+    minimal-pair, content-validity, or construct-confusion exercises. Keep every substantive ordinal
+    result pre-validation until prespecified human evidence exists.
+  - >-
+    The 24-item public core remains a small, uneven, English-language author sample with no demonstrated
+    differential item functioning or measurement invariance. Preserve the prohibition on unsupported
+    group, cultural, language, and worldview comparisons and add machine-checked coverage summaries
+    before expanding the benchmark's use claims.
+  - >-
+    Human adjudication still lacks rating ingestion, blinded balanced assignment, rater calibration,
+    ordinal agreement, and disagreement-preserving adjudication. This is acceptable for alpha only
+    because the assurance boundary fails closed.
+  - >-
+    UserState remains a nonreactive algebraic derivative of any future ordinal judge scores. It is safe
+    in the current detector-only alpha because all score-derived deltas are zero and the state is
+    explicitly non-evidentiary. Do not promote it to outcome evidence without competing transition
+    models, sensitivity analysis, reactive observable choices, and independent calibration.
+  - >-
+    The privacy and integrity changes preserve current estimands but have not been tested for hash
+    collision behavior at benchmark scale. Use full or collision-checked identifiers if private
+    extensions grow enough for truncated 64-bit opaque identifiers to become a material risk.

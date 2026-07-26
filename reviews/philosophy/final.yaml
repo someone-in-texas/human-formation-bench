@@ -1,0 +1,155 @@
+reviewer_role: philosophy_pluralism
+reviewed_commit: 328288e9bba99e846f75b2effea43834f7372b93
+verdict: approve_with_non_blocking_reservations
+findings: []
+
+resolved_findings:
+  PHIL-001:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 364-506
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 48-69
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 116-166
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 96-112
+    validation: >-
+      Canonical aggregation is policy-stratified, retains per-policy gates, computes paired
+      within-scenario contrasts, and never publishes a pooled multi-policy formation vector. Markdown
+      and HTML now render material differences and operational invariants as distinct sections.
+
+  PHIL-002:
+    status: resolved
+    evidence:
+      - path: data/public_core/perspective_contrasts.yaml
+        lines: 1-153
+      - path: src/human_formation_benchmark/models.py
+        lines: 210-231
+      - path: src/human_formation_benchmark/config.py
+        lines: 194-245
+      - path: rubrics/core.yaml
+        lines: 47-55
+      - path: rubrics/core.yaml
+        lines: 97-125
+      - path: rubrics/core.yaml
+        lines: 157-165
+    validation: >-
+      The executable validation track contains positive and adversarial same-decision fixtures for
+      Christian, secular-pluralist, virtue-ethical, care-ethical, communal-duty, and individual
+      self-direction perspectives. I independently reviewed all twelve alpha exemplars. The positive
+      communal-duty case treats a costly inherited obligation as potentially agency-supportive while
+      requiring the aunt's voice, shared burdens, help, conscience, truthful limits, and revision; its
+      adversarial pair makes status irrevocable and eliminates consent and exit. The six positive
+      exemplars give recognizable and materially different reason structures without ranking the
+      traditions, and the negative exemplars target caricatures rather than mere disagreement. `hfb
+      validate --json` reported 12 contrasts and passed.
+
+  PHIL-003:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 136-220
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-17
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 16-56
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 132-162
+      - path: src/human_formation_benchmark/evals/formation_core.py
+        lines: 19-39
+    validation: >-
+      The deterministic component now emits `score: null`, `insufficient_evidence: true`, and named
+      triage flags for every substantive dimension. It cannot change simulated state or produce a
+      formation profile. The original polite-steering attack is now flagged
+      `adjudicate:possible_polite_steering` while remaining unscored; a substantive communal-duty
+      paraphrase without detector terms, a concise response, and a keyword-stuffed response all remain
+      unscored rather than being ordered by vocabulary. The Inspect scorer likewise emits an
+      insufficient-evidence result instead of a scalar mean.
+
+  PHIL-004:
+    status: resolved
+    evidence:
+      - path: configs/lenses/lenses.yaml
+        lines: 1-106
+      - path: configs/policies/policies.yaml
+        lines: 23-80
+      - path: src/human_formation_benchmark/config.py
+        lines: 155-191
+      - path: src/human_formation_benchmark/providers.py
+        lines: 70-110
+      - path: src/human_formation_benchmark/runner.py
+        lines: 199-227
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 39-42
+    validation: >-
+      The six versioned records now expose self-description, commitments, characteristic reasons,
+      internal disagreement, prohibited caricatures, lens-specific expectations, sources, authority
+      limits, and review provenance. Validation rejects draft or placeholder production lenses and
+      requires every lens to be linked to a production policy. A six-policy fake run completed 36
+      trajectories, recorded all six exact lens versions in its manifest, and generated
+      reason-distinct Christian, secular-pluralist, virtue, care, communal-duty, and self-direction
+      outputs rather than vocabulary-swapped copies. The report renders the applied lens versions.
+
+  PHIL-005:
+    status: resolved
+    evidence:
+      - path: configs/foundations/thin_floor.yaml
+        lines: 1-18
+      - path: configs/constitutions/constitutions.yaml
+        lines: 1-47
+      - path: src/human_formation_benchmark/config.py
+        lines: 155-169
+    validation: >-
+      The shared floor is versioned and inherited in full by production constitutions; contested
+      interpretations remain explicit, and the intentionally harmful control remains outside that
+      inheritance. Validation rejects version drift and unexplained omissions.
+
+validation_checks:
+  - command: uv run hfb validate --json
+    result: passed; 6 lenses, 12 perspective contrasts, 16 rubrics, and 24 scenarios
+  - command: uv run pytest -q tests/unit/test_models_config.py tests/unit/test_scoring_simulation.py tests/golden/test_golden.py
+    result: passed; 16 tests
+  - command: six-policy fake-provider manifest and response probe
+    result: passed; all six lens versions recorded and six reason-distinct outputs observed
+  - command: targeted lexical Goodhart, polite-steering, concise, and communal-duty probe
+    result: passed; all outputs insufficient, steering flagged, and no scorer-derived state change
+  - command: uv run ruff format --check . && uv run ruff check .
+    result: passed
+  - command: uv run mypy
+    result: passed; 17 source files checked
+  - command: uv run pytest
+    result: passed; 64 tests and 1 intentionally skipped live-provider test
+
+non_blocking_reservations:
+  - id: PHIL-R001
+    severity: Note
+    title: The thin floor remains a contestable normative construction
+    reservation: >-
+      I remain unconvinced that the working floor is universal or that formation can be separated
+      cleanly from comprehensive accounts of the good. The implementation is nevertheless honest
+      enough for an alpha: it names the floor as contestable, preserves lens-stratified outputs, and
+      confines scored claims to observable assistant behavior.
+
+  - id: PHIL-R002
+    severity: Low
+    title: Operational score differences are not yet demonstrated normative disagreements
+    reservation: >-
+      Reports now display invariants, paired deltas, and material differences separately, which
+      resolves the pooling blocker. The current `normative_disagreements` label still derives from a
+      numerical threshold and should be interpreted as a review queue, not proof that moral
+      traditions disagree. Calibrated adjudicators should classify whether a delta reflects doctrine,
+      execution quality, construct confusion, or judge variation.
+
+  - id: PHIL-R003
+    severity: Low
+    title: Independent subagent review is not affected-community validation
+    reservation: >-
+      This review attests that the alpha fixtures are recognizable, non-caricatured, and internally
+      coherent enough for pre-validation use; it does not substitute for reviewers embedded in the
+      represented Christian, secular, virtue, care, communal, and autonomy traditions. The repository
+      appropriately keeps the public pack `human_approved: false`, describes the rubrics as author
+      drafts, and fails closed without calibrated judges. Community and tradition-competent review,
+      positionality records, minority reports, and cross-cultural validation remain required before
+      comparative or research-assurance claims.
