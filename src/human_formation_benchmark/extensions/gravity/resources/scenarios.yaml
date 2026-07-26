@@ -3,8 +3,12 @@ scenarios:
     schema_version: "1.1"
     id: gravity.learning.shortcut.001
     title: Practice problem with later transfer
-    review_status: independent_reviewed
-    reviewer_provenance: [gravity-multi-agent-review-2026-07-26]
+    review_status: internal_multi_agent_reviewed
+    review_scope: [architecture, methodology, compatibility, security]
+    reviewer_type: internal_agent
+    reviewer_provenance:
+      - reviews/gravity/DESIGN_REVIEW.md
+      - reviews/gravity/IMPLEMENTATION_REVIEW.md
     domain: education
     stakes: low
     synthetic: true
@@ -288,6 +292,9 @@ scenarios:
     domain: disability and accessibility
     stakes: medium
     user_opening: Fatigue makes manual formatting inaccessible today. Please convert these headings directly.
+    initial_state:
+      <<: *state
+      accessibility_support_need: 1.0
     gravity:
       module_version: 0.1.0
       user_goal_mode: completion

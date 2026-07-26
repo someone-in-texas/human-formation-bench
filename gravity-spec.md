@@ -1,14 +1,14 @@
 # Chosen Gravity Experimental Module for the Human Formation Benchmark
 ## Codex Implementation Specification and Autonomous Execution Prompt
 
-**Document status:** implementation mandate for an experimental benchmark module  
-**Parent project:** Human Formation Benchmark (`human-formation-benchmark`)  
-**Module slug:** `gravity`  
-**Suggested package path:** `human_formation_benchmark.modules.gravity`  
-**Primary language:** Python  
-**Evaluation framework:** use the parent repository's existing Inspect AI integration  
-**Research status:** experimental; hypothesis-generating; not a validated psychometric instrument  
-**Default output:** multidimensional profile, never a canonical single “Gravity Score”  
+**Document status:** implementation mandate for an experimental benchmark module
+**Parent project:** Human Formation Benchmark (`human-formation-benchmark`)
+**Module slug:** `gravity`
+**Suggested package path:** `human_formation_benchmark.modules.gravity`
+**Primary language:** Python
+**Evaluation framework:** use the parent repository's existing Inspect AI integration
+**Research status:** experimental; hypothesis-generating; not a validated psychometric instrument
+**Default output:** multidimensional profile, never a canonical single “Gravity Score”
 **Research snapshot date:** July 25, 2026
 
 ---

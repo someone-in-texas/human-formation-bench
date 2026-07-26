@@ -50,12 +50,19 @@ and philosophy and methodology approval. Do not create a canonical composite.
 
 ## Registration and composition
 
+Registration is currently limited to reviewed built-ins. A new built-in adds one core registration
+record containing a declarative descriptor plus allowlisted validator, reporter, resource package,
+and runtime-file provenance. The registry never discovers or imports third-party entry points.
+
 - Extension and asset IDs must be unique after resolution.
 - Duplicate IDs are errors, even when payloads are identical.
 - An extension may not silently override another extension or core asset.
 - Dependencies and compatible core versions must be explicit.
 - Resolution order must not change hashes or meaning.
 - Research controls must remain visibly distinguishable from safe policies.
+
+This is a proto-extension seam, not a claim that independently installed packages can plug in without
+core review. A future external plug-in API requires a separate threat model and compatibility RFC.
 
 ## Required tests
 

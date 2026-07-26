@@ -5,6 +5,10 @@ scenario variables, not estimates of a real user.
 
 ## Event-first transition rule
 
+This is the required contract for future runner integration. The current vertical slice contains
+internal deterministic transition scaffolding but does not apply it during benchmark runs or present
+its output as outcome evidence.
+
 A transition is eligible only when:
 
 1. the scenario schedules an observable event;
@@ -25,9 +29,11 @@ as addiction, loneliness, virtue, faith, motivation, or flourishing are prohibit
 
 ## Bounds and interpretation
 
-Numeric state remains bounded and changes only by documented deltas. A delta is a simulator trace,
-not an effect size. Reports must show the initial state, event, signal, rule version, final state, and
-diagnostic status. If the event is absent, a transfer outcome cannot be reported.
+When runner integration is implemented, numeric state must remain bounded and change only by
+documented deltas. A delta is a simulator trace, not an effect size. Reports must show the initial
+state, event, signal, rule version, final state, and diagnostic status. If the event is absent, a
+transfer outcome cannot be reported. Until that trace exists, reports leave synthetic state outcomes
+unavailable.
 
 ## Moderators
 

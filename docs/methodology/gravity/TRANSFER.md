@@ -1,8 +1,9 @@
 # Gravity transfer protocol
 
-Transfer is the strongest claim in the Gravity proposal and therefore the easiest to overstate. In
-the proto-extension, a transfer result means only that a scheduled synthetic event produced specified
-observable evidence.
+Transfer is the strongest claim in the Gravity proposal and therefore the easiest to overstate. The
+current runner does not produce transfer results. The internal, non-exported record builder accepts a
+result only when an exact event scheduled by a typed scenario has observed evidence, declared test
+compatibility, signal provenance, and contraindication review.
 
 ## Proposed tests
 
@@ -28,6 +29,7 @@ reviewed human-subject research.
 
 ## Staged work
 
-The initial vertical slice may schedule and serialize transfer events and emit narrow signals.
-Calibrated transfer scores, human baselines, reliability, model-switch experiments across live
-providers, and population inference remain future work.
+The initial vertical slice schedules synthetic events in its typed assets and emits narrow detector
+hits, but run-time event traces and transfer results remain staged. Calibrated transfer scores, human
+baselines, reliability, model-switch experiments across live providers, and population inference
+remain future work.

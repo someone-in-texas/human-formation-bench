@@ -81,6 +81,7 @@ human_formation_benchmark = [
   "resources/**/*.json",
   "resources/**/*.j2",
   "extensions/gravity/resources/*.yaml",
+  "extensions/gravity/schemas/*.json",
 ]
 
 [tool.setuptools.data-files]

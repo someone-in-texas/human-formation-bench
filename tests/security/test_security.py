@@ -125,10 +125,19 @@ def test_extension_assets_reject_symlinks(
         research_controls_available=False,
         config_files=["linked.yaml"],
     )
-    registry = __import__(
+    extension_module = __import__(
         "human_formation_benchmark.extensions",
-        fromlist=["_BUILTIN_EXTENSIONS"],
-    )._BUILTIN_EXTENSIONS
-    monkeypatch.setitem(registry, "linked_fixture", descriptor)
+        fromlist=["_BUILTIN_REGISTRATIONS"],
+    )
+    registry = extension_module._BUILTIN_REGISTRATIONS
+    gravity = registry["gravity"]
+    registration = type(gravity)(
+        descriptor=descriptor,
+        resource_package=gravity.resource_package,
+        validator=gravity.validator,
+        reporter=gravity.reporter,
+        runtime_files=(),
+    )
+    monkeypatch.setitem(registry, "linked_fixture", registration)
     with pytest.raises(ValueError, match="symbolic links"):
         resolve_extension("linked_fixture", root=tmp_path)

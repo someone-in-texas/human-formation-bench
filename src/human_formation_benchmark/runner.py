@@ -560,9 +560,7 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
         set(extension.descriptor.research_control_policy_ids) if extension else set()
     )
     selected_controls = sorted(
-        policy_id
-        for policy_id, policy in policy_configs.items()
-        if policy.get("research_control") is True or policy_id in declared_controls
+        policy_id for policy_id in policies if policy_id in declared_controls
     )
     if selected_controls and not options.allow_research_controls:
         raise ValueError(
@@ -585,6 +583,12 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
     if resume_dir:
         manifest = store.load_manifest()
         completed = _verify_trajectory_ledger(store, manifest)
+        if manifest.scenario_pack_disclosure == "private":
+            if options.pack_path is None:
+                raise ValueError("resuming a private run requires the original pack")
+            supplied_pack_hash = build_manifest(options.pack_path).content_hash
+            if supplied_pack_hash != manifest.scenario_pack_hash:
+                raise ValueError("private resume pack hash does not match the original run")
         if manifest.status == "completed":
             return run_dir
         if manifest.model != options.model or manifest.profile != options.profile:
@@ -766,10 +770,9 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                 ],
             }
         )
-    trajectories = list(store.iter_trajectories())
-    render_reports(run_dir, manifest, report, trajectories)
-    render_extension_artifacts(options.extension, run_dir, trajectories)
-    store.export_columnar(trajectories)
+    render_reports(run_dir, manifest, report, store.iter_trajectories())
+    render_extension_artifacts(options.extension, run_dir, store.iter_trajectories())
+    store.export_columnar(store.iter_trajectories())
     protect_artifact_tree(run_dir)
     return run_dir
 
@@ -860,13 +863,12 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
         configured_judges=merged.judge_models,
         target_model=merged.model,
     )
-    trajectories = list(store.iter_trajectories())
-    render_reports(output_dir, merged, report, trajectories)
+    render_reports(output_dir, merged, report, store.iter_trajectories())
     render_extension_artifacts(
         getattr(merged, "extension_id", None),
         output_dir,
-        trajectories,
+        store.iter_trajectories(),
     )
-    store.export_columnar(trajectories)
+    store.export_columnar(store.iter_trajectories())
     protect_artifact_tree(output_dir)
     return output_dir

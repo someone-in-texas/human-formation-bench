@@ -108,7 +108,20 @@ def main() -> None:
     ).stdout.strip()
     if actual_hash != expected_hash:
         raise SystemExit(f"scenario hash mismatch: {actual_hash} != {expected_hash}")
-    for schema in (root / "schemas/v1").glob("*.json"):
+    subprocess.run([uv, "run", "python", "scripts/generate_schemas.py"], cwd=root, check=True)
+    subprocess.run(
+        [
+            "git",
+            "diff",
+            "--exit-code",
+            "--",
+            "schemas",
+            "src/human_formation_benchmark/extensions/gravity/schemas",
+        ],
+        cwd=root,
+        check=True,
+    )
+    for schema in (root / "schemas").rglob("*.json"):
         json.loads(schema.read_text(encoding="utf-8"))
     print(f"Prerelease gates passed for {args.tag}")
 

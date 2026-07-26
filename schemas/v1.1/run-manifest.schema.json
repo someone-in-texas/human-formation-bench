@@ -6,24 +6,55 @@
   "properties": {
     "benchmark_exposure": {
       "default": "not_provided",
-      "enum": ["not_provided", "public_seen", "public_tuned", "private_unseen", "mixed"],
+      "enum": [
+        "not_provided",
+        "public_seen",
+        "public_tuned",
+        "private_unseen",
+        "mixed"
+      ],
       "title": "Benchmark Exposure",
       "type": "string"
     },
     "benchmark_specific_tuning": {
-      "anyOf": [{"type": "boolean"}, {"type": "null"}],
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
       "default": null,
       "title": "Benchmark Specific Tuning"
     },
-    "budget_usd": {"title": "Budget Usd", "type": "number"},
+    "budget_usd": {
+      "title": "Budget Usd",
+      "type": "number"
+    },
     "completed_sample_ids": {
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "title": "Completed Sample Ids",
       "type": "array"
     },
-    "config_hash": {"title": "Config Hash", "type": "string"},
-    "created_at": {"format": "date-time", "title": "Created At", "type": "string"},
-    "errors": {"items": {"type": "string"}, "title": "Errors", "type": "array"},
+    "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
     "expected_sample_count": {
       "default": 0,
       "title": "Expected Sample Count",
@@ -45,36 +76,80 @@
       "type": "string"
     },
     "failed_sample_ids": {
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "title": "Failed Sample Ids",
       "type": "array"
     },
-    "git_commit": {"title": "Git Commit", "type": "string"},
-    "hard_stop": {"title": "Hard Stop", "type": "boolean"},
+    "git_commit": {
+      "title": "Git Commit",
+      "type": "string"
+    },
+    "hard_stop": {
+      "title": "Hard Stop",
+      "type": "boolean"
+    },
     "judge_models": {
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "title": "Judge Models",
       "type": "array"
     },
     "lens_versions": {
-      "additionalProperties": {"type": "string"},
+      "additionalProperties": {
+        "type": "string"
+      },
       "title": "Lens Versions",
       "type": "object"
     },
-    "model": {"title": "Model", "type": "string"},
-    "operating_system": {"title": "Operating System", "type": "string"},
-    "package_version": {"title": "Package Version", "type": "string"},
-    "policies": {"items": {"type": "string"}, "title": "Policies", "type": "array"},
-    "profile": {"title": "Profile", "type": "string"},
-    "python_version": {"title": "Python Version", "type": "string"},
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "operating_system": {
+      "title": "Operating System",
+      "type": "string"
+    },
+    "package_version": {
+      "title": "Package Version",
+      "type": "string"
+    },
+    "policies": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Policies",
+      "type": "array"
+    },
+    "profile": {
+      "title": "Profile",
+      "type": "string"
+    },
+    "python_version": {
+      "title": "Python Version",
+      "type": "string"
+    },
     "redacted_environment": {
-      "additionalProperties": {"type": "string"},
+      "additionalProperties": {
+        "type": "string"
+      },
       "title": "Redacted Environment",
       "type": "object"
     },
-    "reserve_fraction": {"title": "Reserve Fraction", "type": "number"},
-    "run_family_hash": {"title": "Run Family Hash", "type": "string"},
-    "run_id": {"title": "Run Id", "type": "string"},
+    "reserve_fraction": {
+      "title": "Reserve Fraction",
+      "type": "number"
+    },
+    "run_family_hash": {
+      "title": "Run Family Hash",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
     "scenario_pack_canonical": {
       "default": true,
       "title": "Scenario Pack Canonical",
@@ -82,11 +157,17 @@
     },
     "scenario_pack_disclosure": {
       "default": "public",
-      "enum": ["public", "private"],
+      "enum": [
+        "public",
+        "private"
+      ],
       "title": "Scenario Pack Disclosure",
       "type": "string"
     },
-    "scenario_pack_hash": {"title": "Scenario Pack Hash", "type": "string"},
+    "scenario_pack_hash": {
+      "title": "Scenario Pack Hash",
+      "type": "string"
+    },
     "scenario_pack_id": {
       "default": "hfb-public-core",
       "title": "Scenario Pack Id",
@@ -98,21 +179,52 @@
       "title": "Schema Version",
       "type": "string"
     },
-    "seeds": {"items": {"type": "integer"}, "title": "Seeds", "type": "array"},
-    "shard_index": {"default": 0, "title": "Shard Index", "type": "integer"},
-    "shards": {"default": 1, "title": "Shards", "type": "integer"},
-    "spent_usd": {"default": 0, "title": "Spent Usd", "type": "number"},
+    "seeds": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Seeds",
+      "type": "array"
+    },
+    "shard_index": {
+      "default": 0,
+      "title": "Shard Index",
+      "type": "integer"
+    },
+    "shards": {
+      "default": 1,
+      "title": "Shards",
+      "type": "integer"
+    },
+    "spent_usd": {
+      "default": 0,
+      "title": "Spent Usd",
+      "type": "number"
+    },
     "status": {
-      "enum": ["planned", "running", "interrupted", "completed", "failed", "budget_exhausted"],
+      "enum": [
+        "planned",
+        "running",
+        "interrupted",
+        "completed",
+        "failed",
+        "budget_exhausted"
+      ],
       "title": "Status",
       "type": "string"
     },
     "trajectory_hashes": {
-      "additionalProperties": {"type": "string"},
+      "additionalProperties": {
+        "type": "string"
+      },
       "title": "Trajectory Hashes",
       "type": "object"
     },
-    "updated_at": {"format": "date-time", "title": "Updated At", "type": "string"}
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
   },
   "required": [
     "run_id",

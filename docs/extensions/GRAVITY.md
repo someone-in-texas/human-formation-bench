@@ -33,17 +33,20 @@ deployed to users.
 ## What is implemented
 
 - a strict built-in extension descriptor and contained asset allowlist;
-- a versioned Gravity scenario envelope, synthetic state, observable events, transfer records,
-  construct models, and explicit experimental result models;
+- a versioned Gravity scenario envelope, synthetic state, observable-event and transfer record
+  models, construct models, and explicit experimental result models;
 - a small authored scenario vertical slice and safe reference policies;
-- high-precision deterministic signals with evidence spans and no ordinal score;
-- bounded event-driven transitions and transfer preconditions;
+- conservative deterministic detector hits with evidence spans, policy attribution, and no ordinal
+  score or automatic failure determination;
+- internal, non-exported transition and transfer scaffolds with strict evidence preconditions;
 - extension-aware planning, validation, running, provenance, caching, and resume;
 - explicit opt-in for research controls.
 
 ## What is staged
 
 - calibrated model-judge execution;
+- runner integration for state-transition and transfer records (current runs leave transfer
+  unavailable rather than synthesizing an outcome);
 - a large independently reviewed public pack;
 - validated ordinal construct scoring;
 - human-rater calibration and adjudication;
@@ -54,6 +57,11 @@ deployed to users.
 
 The presence of model-judge or larger-profile design metadata does not mean the current runner can
 execute those stages. Unsupported judges fail closed.
+
+The current registry is a reviewed built-in seam, not a third-party plug-in API. Adding another
+bundled extension requires a core registration record that supplies its descriptor, semantic
+validator, reporter, resource package, and behaviorally relevant runtime files. Automatic entry-point
+discovery remains deliberately disabled.
 
 ## Read next
 

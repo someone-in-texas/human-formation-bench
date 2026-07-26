@@ -24,7 +24,12 @@ from .config import (
     validate_challenge_coverage,
     validate_foundations,
 )
-from .extensions import list_extensions, render_extension_artifacts, resolve_extension
+from .extensions import (
+    list_extensions,
+    render_extension_artifacts,
+    resolve_extension,
+    validate_extension_assets,
+)
 from .hashing import content_hash
 from .models import Dimension
 from .pack import build_manifest, pack_hash, validate_pack
@@ -162,6 +167,7 @@ def validate_command(
             ),
         }
         if resolved_extension is not None:
+            extension_assets = validate_extension_assets(resolved_extension)
             controls = resolved_extension.descriptor.research_control_policy_ids
             for policy_id in controls:
                 policy = load_named_config(
@@ -177,6 +183,7 @@ def validate_command(
                 "id": resolved_extension.descriptor.id,
                 "version": resolved_extension.descriptor.version,
                 "fingerprint": resolved_extension.fingerprint,
+                "assets": extension_assets,
             }
     except Exception as error:
         _fail(f"{type(error).__name__}: {error}")
@@ -467,6 +474,15 @@ def run(
 @app.command()
 def resume(
     run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
+    pack: Annotated[
+        Path | None,
+        typer.Option(
+            "--pack",
+            exists=True,
+            dir_okay=False,
+            help="Reattach a private pack; its content hash must match the manifest.",
+        ),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Resume an interrupted run from its resolved configuration."""
@@ -475,6 +491,10 @@ def resume(
     manifest = store.load_manifest()
     config = json.loads((run_dir / "resolved-config.json").read_text(encoding="utf-8"))
     raw = config["options"]
+    if manifest.scenario_pack_disclosure == "private" and pack is None:
+        _fail("private runs require --pack PATH when resuming", 1)
+    if manifest.scenario_pack_disclosure != "private" and pack is not None:
+        _fail("--pack may only reattach a private scenario pack", 1)
     options = RunOptions(
         profile=manifest.profile,
         model=manifest.model,
@@ -492,7 +512,7 @@ def resume(
         input_per_million_usd=raw.get("input_per_million_usd"),
         output_per_million_usd=raw.get("output_per_million_usd"),
         policies=raw.get("policies"),
-        pack_path=Path(config["pack_path"]).resolve() if config.get("pack_path") else None,
+        pack_path=pack.resolve() if pack is not None else None,
         benchmark_exposure=manifest.benchmark_exposure,
         benchmark_specific_tuning=manifest.benchmark_specific_tuning,
         extension=raw.get("extension"),
@@ -606,14 +626,13 @@ def report(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)
                 ],
             }
         )
-    trajectories = list(store.iter_trajectories())
-    render_reports(run_dir, manifest, score_report, trajectories)
+    render_reports(run_dir, manifest, score_report, store.iter_trajectories())
     render_extension_artifacts(
         getattr(manifest, "extension_id", None),
         run_dir,
-        trajectories,
+        store.iter_trajectories(),
     )
-    store.export_columnar(trajectories)
+    store.export_columnar(store.iter_trajectories())
     protect_artifact_tree(run_dir)
     console.print(run_dir / "report.html")
 

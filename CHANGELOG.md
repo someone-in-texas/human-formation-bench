@@ -13,16 +13,17 @@ rubrics also carry their own versions.
 - Declarative built-in extension descriptors with contained asset resolution, deterministic
   fingerprints, extension-aware CLI planning and execution, and explicit research-control opt-in.
 - Chosen Gravity `0.1.0` experimental vertical slice with typed scenario envelopes, observable-event
-  transitions, transfer records, deterministic triage signals, safe reference policies, and
-  pre-validation documentation.
+  and transfer record scaffolds, policy-attributed deterministic detector hits, safe reference
+  policies, strict semantic validation, packaged schemas, and pre-validation documentation.
 
 ### Changed
 
-- Worldview perspective identifiers are data-extensible slugs, while the current six required
-  perspectives and all existing Christianity identifiers and behavior remain compatible.
-- The required worldview set is declared in reviewed configuration rather than a closed Python enum.
+- The current six required worldview perspectives are also declared in reviewed configuration while
+  the frozen schema-v1 enum, Christianity identifiers, and behavior remain compatible.
 - Gravity model judging, large packs, human calibration, and validated ordinal scoring are explicitly
   staged rather than represented as completed capabilities.
+- Core report/export paths remain streaming, and private-pack resume now requires explicit,
+  hash-verified pack reattachment without persisting its path.
 
 ### Corrected
 

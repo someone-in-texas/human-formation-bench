@@ -155,7 +155,14 @@ class GravityScenario(GravityModel):
     schema_version: Literal["1.1"] = "1.1"
     id: str = Field(pattern=r"^gravity\.[a-z0-9][a-z0-9.-]+$")
     title: str = Field(min_length=3, max_length=200)
-    review_status: Literal["independent_reviewed"]
+    review_status: Literal[
+        "author_draft",
+        "internal_multi_agent_reviewed",
+        "independent_reviewed",
+        "community_reviewed",
+    ]
+    review_scope: list[str] = Field(min_length=1)
+    reviewer_type: Literal["author", "internal_agent", "external_expert", "affected_community"]
     reviewer_provenance: list[str] = Field(min_length=1)
     domain: str = Field(min_length=2, max_length=80)
     stakes: Literal["low", "medium", "high", "critical"]
@@ -180,6 +187,20 @@ class GravityScenario(GravityModel):
         ):
             if opportunity and opportunity.available and opportunity.session not in sessions:
                 raise ValueError("available opportunities require a scheduled event")
+        if (
+            self.gravity.accessibility_factors
+            and self.initial_state.accessibility_support_need == 0
+        ):
+            raise ValueError(
+                "declared accessibility factors require a nonzero accessibility support need"
+            )
+        if self.review_status == "independent_reviewed" and self.reviewer_type != "external_expert":
+            raise ValueError("independent review requires external-expert provenance")
+        if (
+            self.review_status == "community_reviewed"
+            and self.reviewer_type != "affected_community"
+        ):
+            raise ValueError("community review requires affected-community provenance")
         return self
 
 
@@ -223,7 +244,7 @@ class EvidenceSpan(GravityModel):
 
 class GravitySignal(GravityModel):
     signal_id: str = Field(pattern=r"^gravity\.[a-z0-9_]+$")
-    polarity: Literal["supportive", "risk", "gate", "context"]
+    polarity: Literal["supportive", "risk", "adjudication_required", "context"]
     precision: Literal["exact_pattern"]
     evidence: EvidenceSpan
     rule_version: str
@@ -248,7 +269,7 @@ class SignalReport(GravityModel):
     schema_version: Literal["1.1"] = "1.1"
     detector_version: str
     signals: list[GravitySignal]
-    gates: GravityGates
+    detector_hits: GravityGates
     ordinal_score: Literal[None] = None
     interpretation: Literal["triage_only_not_a_semantic_or_psychometric_judgment"] = (
         "triage_only_not_a_semantic_or_psychometric_judgment"
@@ -261,11 +282,21 @@ class TransferObservation(GravityModel):
     occurred: bool
     success: bool | None = None
     evidence: str | None = Field(default=None, max_length=1000)
+    signal_provenance: list[str] = Field(default_factory=list)
+    contraindications_reviewed: bool = False
 
     @model_validator(mode="after")
     def success_requires_event(self) -> TransferObservation:
         if self.success is not None and not self.occurred:
             raise ValueError("transfer success cannot be reported without an event")
+        if self.success is not None and (
+            self.evidence is None
+            or not self.signal_provenance
+            or not self.contraindications_reviewed
+        ):
+            raise ValueError(
+                "transfer outcomes require evidence, signal provenance, and contraindication review"
+            )
         return self
 
 
@@ -305,6 +336,11 @@ class GravityScoreObservation(GravityModel):
     raw_score: int | None = Field(default=None, ge=0, le=4)
     confidence: Probability
     evidence: list[str] = Field(default_factory=list)
+    scenario_id: str | None = None
+    rubric_id: str | None = None
+    rubric_version_hash: str | None = Field(default=None, pattern=r"^sha256:[0-9a-f]{64}$")
+    judge_id: str | None = None
+    judgment_status: Literal["uncalibrated_experimental_judgment"] | None = None
     insufficient_evidence: bool = False
     not_applicable: bool = False
 
@@ -312,6 +348,17 @@ class GravityScoreObservation(GravityModel):
     def missing_is_explicit(self) -> GravityScoreObservation:
         if self.raw_score is None and not (self.insufficient_evidence or self.not_applicable):
             raise ValueError("missing rubric judgment requires an explicit reason")
+        if self.raw_score is not None and (
+            not self.evidence
+            or self.scenario_id is None
+            or self.rubric_id is None
+            or self.rubric_version_hash is None
+            or self.judge_id is None
+            or self.judgment_status is None
+        ):
+            raise ValueError(
+                "ordinal judgments require evidence, scenario, rubric hash, judge, and status"
+            )
         return self
 
 
@@ -323,7 +370,57 @@ class GravityReportArtifact(GravityModel):
     ] = "synthetic_behavioral_benchmark_not_clinical_or_psychometric_measure"
     construct_profile: dict[GravityConstruct, float | None]
     raw_observations: list[GravityScoreObservation]
-    failure_gates: GravityGates
+    detector_hits_by_policy: dict[str, GravityGates]
+    run_detector_hit_union: GravityGates
     transfer: GravityTransferResult | None = None
     canonical_composite: Literal[False] = False
+    ordinal_profile_status: Literal["unavailable_pending_calibrated_judgment"] = (
+        "unavailable_pending_calibrated_judgment"
+    )
     limitations: list[str] = Field(min_length=1)
+
+
+class GravityManifest(GravityModel):
+    schema_version: Literal["1.1"] = "1.1"
+    id: Literal["gravity"]
+    title: str
+    version: Literal["0.1.0"]
+    status: Literal["experimental"]
+    canonical_composite: Literal[False]
+    requires_longitudinal_support: Literal[True]
+    research_controls_available: Literal[True]
+    experimental_notice: str
+    license: Literal["Apache-2.0"]
+    synthetic_data_only: Literal[True]
+    copyrighted_scale_items: Literal[False]
+
+
+class VersionedMethod(GravityModel):
+    version: str
+
+
+class TransitionParameters(VersionedMethod):
+    bounded: Literal[True]
+    interpretation: Literal["experimental_simulation_parameters_not_human_causal_effects"]
+
+
+class TransferProtocolConfig(VersionedMethod):
+    success_requires_observed_event: Literal[True]
+
+
+class SignalConfig(VersionedMethod):
+    output: Literal["attributable_triage_signals_not_ordinal_scores"]
+
+
+class ControlConfig(GravityModel):
+    explicit_opt_in_required: Literal[True]
+    production_adapters_must_refuse: Literal[True]
+
+
+class GravityConfig(GravityModel):
+    schema_version: Literal["1.1"] = "1.1"
+    module_version: Literal["0.1.0"]
+    transition_parameters: TransitionParameters
+    transfer_protocol: TransferProtocolConfig
+    deterministic_signals: SignalConfig
+    controls: ControlConfig

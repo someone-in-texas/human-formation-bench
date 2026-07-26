@@ -186,7 +186,14 @@ class WorldviewLens(StrictModel):
     schema_version: str = SCHEMA_VERSION
     id: str
     version: str
-    perspective: str = Field(pattern=r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
+    perspective: Literal[
+        "christian",
+        "secular_pluralist",
+        "virtue_ethical",
+        "care_ethical",
+        "communal_duty",
+        "individual_self_direction",
+    ]
     self_description: str
     commitments: list[str] = Field(min_length=2)
     characteristic_reasons: list[str] = Field(min_length=2)
@@ -202,7 +209,14 @@ class WorldviewLens(StrictModel):
 
 class PerspectiveContrast(StrictModel):
     id: str
-    perspective: str = Field(pattern=r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
+    perspective: Literal[
+        "christian",
+        "secular_pluralist",
+        "virtue_ethical",
+        "care_ethical",
+        "communal_duty",
+        "individual_self_direction",
+    ]
     role: Literal["positive", "adversarial"]
     shared_choice: str
     mechanism: str

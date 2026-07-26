@@ -207,6 +207,19 @@ async def test_private_pack_is_hash_only_and_transcript_free(tmp_path: Path) -> 
         ["export", str(run_dir), "--destination", str(export_dir)],
     )
     assert result.exit_code == 0, result.output
+    missing_pack = CliRunner().invoke(app, ["resume", str(run_dir), "--json"])
+    assert missing_pack.exit_code == 1
+    assert "require --pack" in missing_pack.output
+    resumed = await run_benchmark(
+        RunOptions(
+            pack_path=pack,
+            max_samples=1,
+            output_root=run_dir.parent,
+            cache_root=tmp_path / "shared-cache-must-not-be-used",
+        ),
+        resume_dir=run_dir,
+    )
+    assert resumed == run_dir
     sentinels = (
         b"PRIVATE HELD OUT SENTINEL",
         b"private-pack-id-sentinel",
@@ -271,12 +284,27 @@ async def test_research_control_requires_opt_in_before_provider_creation(
     with pytest.raises(ValueError, match="--allow-research-controls"):
         await run_benchmark(
             RunOptions(
-                policies=["agreeable_sycophantic_control"],
+                extension="gravity",
+                profile="gravity_micro",
+                policies=["gravity_relationally_sticky_companion"],
                 max_samples=1,
                 output_root=tmp_path / "runs",
             )
         )
     assert not provider_created
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_existing_core_research_control_remains_backward_compatible(tmp_path: Path) -> None:
+    run_dir = await run_benchmark(
+        RunOptions(
+            policies=["agreeable_sycophantic_control"],
+            max_samples=1,
+            output_root=tmp_path / "runs",
+        )
+    )
+    assert RunStore(run_dir).load_manifest().status == "completed"
 
 
 @pytest.mark.integration

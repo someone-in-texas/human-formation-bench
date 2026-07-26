@@ -1,0 +1,500 @@
+{
+  "$defs": {
+    "GravityConstruct": {
+      "enum": [
+        "formative_friction_calibration",
+        "competence_transfer",
+        "commitment_sovereignty",
+        "reality_contact_and_causal_stakes",
+        "human_social_complementarity",
+        "identity_resilience",
+        "stewardship_and_shared_goods",
+        "dependency_and_exclusivity_resistance",
+        "attentive_appreciation",
+        "formation_transfer"
+      ],
+      "title": "GravityConstruct",
+      "type": "string"
+    },
+    "GravityGates": {
+      "additionalProperties": false,
+      "properties": {
+        "accessibility_need_ignored": {
+          "default": false,
+          "title": "Accessibility Need Ignored",
+          "type": "boolean"
+        },
+        "assistant_as_unreviewable_governor": {
+          "default": false,
+          "title": "Assistant As Unreviewable Governor",
+          "type": "boolean"
+        },
+        "coercive_self_binding": {
+          "default": false,
+          "title": "Coercive Self Binding",
+          "type": "boolean"
+        },
+        "consent_bypass": {
+          "default": false,
+          "title": "Consent Bypass",
+          "type": "boolean"
+        },
+        "dependency_for_retention": {
+          "default": false,
+          "title": "Dependency For Retention",
+          "type": "boolean"
+        },
+        "emergency_delay_for_formation": {
+          "default": false,
+          "title": "Emergency Delay For Formation",
+          "type": "boolean"
+        },
+        "exclusivity_language": {
+          "default": false,
+          "title": "Exclusivity Language",
+          "type": "boolean"
+        },
+        "exit_guilt": {
+          "default": false,
+          "title": "Exit Guilt",
+          "type": "boolean"
+        },
+        "formation_paternalism": {
+          "default": false,
+          "title": "Formation Paternalism",
+          "type": "boolean"
+        },
+        "human_support_displacement": {
+          "default": false,
+          "title": "Human Support Displacement",
+          "type": "boolean"
+        },
+        "unsafe_commitment": {
+          "default": false,
+          "title": "Unsafe Commitment",
+          "type": "boolean"
+        }
+      },
+      "title": "GravityGates",
+      "type": "object"
+    },
+    "GravityScoreObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "construct": {
+          "$ref": "#/$defs/GravityConstruct"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "insufficient_evidence": {
+          "default": false,
+          "title": "Insufficient Evidence",
+          "type": "boolean"
+        },
+        "judge_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Judge Id"
+        },
+        "judgment_status": {
+          "anyOf": [
+            {
+              "const": "uncalibrated_experimental_judgment",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Judgment Status"
+        },
+        "not_applicable": {
+          "default": false,
+          "title": "Not Applicable",
+          "type": "boolean"
+        },
+        "raw_score": {
+          "anyOf": [
+            {
+              "maximum": 4,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Score"
+        },
+        "rubric_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rubric Id"
+        },
+        "rubric_version_hash": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rubric Version Hash"
+        },
+        "scenario_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scenario Id"
+        }
+      },
+      "required": [
+        "construct",
+        "confidence"
+      ],
+      "title": "GravityScoreObservation",
+      "type": "object"
+    },
+    "GravityTransferResult": {
+      "additionalProperties": false,
+      "properties": {
+        "commitment_self_authorship_retained": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commitment Self Authorship Retained"
+        },
+        "evidence_count": {
+          "minimum": 0,
+          "title": "Evidence Count",
+          "type": "integer"
+        },
+        "external_verification_use": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "External Verification Use"
+        },
+        "human_handoff_success": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Human Handoff Success"
+        },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/TransferObservation"
+          },
+          "minItems": 1,
+          "title": "Observations",
+          "type": "array"
+        },
+        "reassurance_independence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reassurance Independence"
+        },
+        "scenario_id": {
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.1",
+          "default": "1.1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "synthetic_outcome": {
+          "const": true,
+          "default": true,
+          "title": "Synthetic Outcome",
+          "type": "boolean"
+        },
+        "transfer_version_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Transfer Version Hash",
+          "type": "string"
+        },
+        "transition_version_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Transition Version Hash",
+          "type": "string"
+        },
+        "unaided_task_success": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unaided Task Success"
+        },
+        "workflow_portability": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflow Portability"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "transition_version_hash",
+        "transfer_version_hash",
+        "observations",
+        "evidence_count"
+      ],
+      "title": "GravityTransferResult",
+      "type": "object"
+    },
+    "TransferObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "contraindications_reviewed": {
+          "default": false,
+          "title": "Contraindications Reviewed",
+          "type": "boolean"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence"
+        },
+        "occurred": {
+          "title": "Occurred",
+          "type": "boolean"
+        },
+        "signal_provenance": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Signal Provenance",
+          "type": "array"
+        },
+        "success": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Success"
+        },
+        "test": {
+          "$ref": "#/$defs/TransferTest"
+        }
+      },
+      "required": [
+        "test",
+        "event_id",
+        "occurred"
+      ],
+      "title": "TransferObservation",
+      "type": "object"
+    },
+    "TransferTest": {
+      "enum": [
+        "ai_withdrawal",
+        "novel_task",
+        "human_handoff",
+        "model_switch",
+        "adversarial_attachment"
+      ],
+      "title": "TransferTest",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1.1/extensions/gravity/gravity-report.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonical_composite": {
+      "const": false,
+      "default": false,
+      "title": "Canonical Composite",
+      "type": "boolean"
+    },
+    "construct_profile": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/GravityConstruct"
+      },
+      "title": "Construct Profile",
+      "type": "object"
+    },
+    "detector_hits_by_policy": {
+      "additionalProperties": {
+        "$ref": "#/$defs/GravityGates"
+      },
+      "title": "Detector Hits By Policy",
+      "type": "object"
+    },
+    "experimental_status": {
+      "const": "synthetic_behavioral_benchmark_not_clinical_or_psychometric_measure",
+      "default": "synthetic_behavioral_benchmark_not_clinical_or_psychometric_measure",
+      "title": "Experimental Status",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "module_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Module Version",
+      "type": "string"
+    },
+    "ordinal_profile_status": {
+      "const": "unavailable_pending_calibrated_judgment",
+      "default": "unavailable_pending_calibrated_judgment",
+      "title": "Ordinal Profile Status",
+      "type": "string"
+    },
+    "raw_observations": {
+      "items": {
+        "$ref": "#/$defs/GravityScoreObservation"
+      },
+      "title": "Raw Observations",
+      "type": "array"
+    },
+    "run_detector_hit_union": {
+      "$ref": "#/$defs/GravityGates"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "transfer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GravityTransferResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "construct_profile",
+    "raw_observations",
+    "detector_hits_by_policy",
+    "run_detector_hit_union",
+    "limitations"
+  ],
+  "title": "GravityReportArtifact",
+  "type": "object"
+}

@@ -52,7 +52,10 @@ omissions. Release automation must fail while any required reviewer reports Crit
 
 - [x] General built-in declarative extension seam, contained asset allowlist, and fingerprints exist.
 - [x] Gravity has strict typed envelopes, a small synthetic vertical slice, observable events,
-  deterministic signals, and explicit research-control opt-in.
+  policy-attributed detector hits, and explicit research-control opt-in.
+- [x] Rich Gravity assets, runner projections, packaged JSON Schemas, and runtime schema parity are
+  checked by `hfb validate --extension gravity`.
+- [ ] Gravity state transitions and transfer traces are integrated into actual benchmark runs.
 - [x] Gravity theory, philosophy, claims, source limits, security, misuse, and accessibility
   documentation exists.
 - [ ] Calibrated Gravity model judges and human adjudication are implemented.
@@ -60,6 +63,7 @@ omissions. Release automation must fail while any required reviewer reports Crit
 - [ ] Ordinal Gravity constructs have human-rater reliability and validity evidence.
 - [ ] Human-subject evidence supports any claim about durable human outcomes.
 - [ ] All thick worldview lenses have migrated through one reviewed extension contract.
+- [ ] Seven required independent Gravity specialist reviews approve the exact release commit.
 
 Gravity's unchecked items are staged research, not implied capabilities. Deterministic signals are
 triage evidence rather than construct scores.

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -15,8 +16,21 @@ from .models import ExtensionDescriptor, ResolvedExtension
 if TYPE_CHECKING:
     from ..models import Trajectory
 
-_BUILTIN_EXTENSIONS: dict[str, ExtensionDescriptor] = {
-    "gravity": ExtensionDescriptor(
+from .gravity.aggregation import render_run_artifacts as render_gravity_artifacts
+from .gravity.validation import validate_assets as validate_gravity_assets
+
+
+@dataclass(frozen=True)
+class _BuiltinRegistration:
+    descriptor: ExtensionDescriptor
+    resource_package: str
+    validator: Callable[[Path], dict[str, int]]
+    reporter: Callable[[Path, Iterable[Trajectory]], list[Path]]
+    runtime_files: tuple[str, ...]
+
+
+_GRAVITY = _BuiltinRegistration(
+    descriptor=ExtensionDescriptor(
         id="gravity",
         title="Chosen Gravity Experimental Extension",
         version="0.1.0",
@@ -41,24 +55,37 @@ _BUILTIN_EXTENSIONS: dict[str, ExtensionDescriptor] = {
             "gravity_productivity_substitution_maximizer",
             "gravity_relationally_sticky_companion",
         ],
-    )
-}
-_BUILTIN_RESOURCE_PACKAGES = {
-    "gravity": "human_formation_benchmark.extensions.gravity",
-}
+    ),
+    resource_package="human_formation_benchmark.extensions.gravity",
+    validator=validate_gravity_assets,
+    reporter=render_gravity_artifacts,
+    runtime_files=(
+        "aggregation.py",
+        "controls.py",
+        "models.py",
+        "signals.py",
+        "transfer.py",
+        "transitions.py",
+        "validation.py",
+    ),
+)
+_BUILTIN_REGISTRATIONS = {"gravity": _GRAVITY}
 
 
 def list_extensions() -> list[ExtensionDescriptor]:
     """Return built-in extension descriptors in stable ID order."""
 
-    return [_BUILTIN_EXTENSIONS[key].model_copy(deep=True) for key in sorted(_BUILTIN_EXTENSIONS)]
+    return [
+        _BUILTIN_REGISTRATIONS[key].descriptor.model_copy(deep=True)
+        for key in sorted(_BUILTIN_REGISTRATIONS)
+    ]
 
 
 def get_extension(extension_id: str) -> ExtensionDescriptor:
     """Return one known descriptor without consulting executable plugin metadata."""
 
     try:
-        return _BUILTIN_EXTENSIONS[extension_id].model_copy(deep=True)
+        return _BUILTIN_REGISTRATIONS[extension_id].descriptor.model_copy(deep=True)
     except KeyError as error:
         raise KeyError(f"unknown extension: {extension_id}") from error
 
@@ -82,11 +109,12 @@ def resolve_extension(
 
     if extension_id is None:
         return None
-    descriptor = get_extension(extension_id)
+    registration = _BUILTIN_REGISTRATIONS.get(extension_id)
+    if registration is None:
+        raise KeyError(f"unknown extension: {extension_id}")
+    descriptor = registration.descriptor.model_copy(deep=True)
     if root is None:
-        base = Path(
-            str(files(_BUILTIN_RESOURCE_PACKAGES[extension_id]).joinpath("resources"))
-        ).resolve()
+        base = Path(str(files(registration.resource_package).joinpath("resources"))).resolve()
     else:
         base = root.resolve()
     scenario_files = _resolve_files(base, descriptor.scenario_files)
@@ -104,10 +132,16 @@ def resolve_extension(
     asset_hashes = {
         str(path.relative_to(base)): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths
     }
+    runtime_root = files(registration.resource_package)
+    runtime_hashes = {
+        filename: hashlib.sha256(runtime_root.joinpath(filename).read_bytes()).hexdigest()
+        for filename in registration.runtime_files
+    }
     fingerprint = content_hash(
         {
             "descriptor": descriptor.model_dump(mode="json"),
             "assets": asset_hashes,
+            "runtime": runtime_hashes,
         }
     )
     return ResolvedExtension(
@@ -125,17 +159,27 @@ def resolve_extension(
 def render_extension_artifacts(
     extension_id: str | None,
     run_dir: Path,
-    trajectories: Sequence[Trajectory],
+    trajectories: Iterable[Trajectory],
 ) -> list[Path]:
     """Dispatch report generation only to reviewed, built-in extension code."""
 
     if extension_id is None:
         return []
-    if extension_id == "gravity":
-        from .gravity.aggregation import render_run_artifacts
+    try:
+        reporter = _BUILTIN_REGISTRATIONS[extension_id].reporter
+    except KeyError as error:
+        raise KeyError(f"unknown extension reporter: {extension_id}") from error
+    return reporter(run_dir, trajectories)
 
-        return render_run_artifacts(run_dir, trajectories)
-    raise KeyError(f"unknown extension reporter: {extension_id}")
+
+def validate_extension_assets(extension: ResolvedExtension) -> dict[str, int]:
+    """Run the reviewed semantic validator registered for a built-in extension."""
+
+    try:
+        validator = _BUILTIN_REGISTRATIONS[extension.descriptor.id].validator
+    except KeyError as error:
+        raise KeyError(f"unknown extension validator: {extension.descriptor.id}") from error
+    return validator(extension.root)
 
 
 __all__ = [
@@ -145,4 +189,5 @@ __all__ = [
     "list_extensions",
     "render_extension_artifacts",
     "resolve_extension",
+    "validate_extension_assets",
 ]
