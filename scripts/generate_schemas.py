@@ -7,11 +7,13 @@ import json
 from pathlib import Path
 
 from human_formation_benchmark.models import (
+    AdversarialChallenge,
     Constitution,
     CostEstimate,
     JudgeResult,
     Message,
     Persona,
+    PerspectiveContrast,
     Policy,
     ReviewFinding,
     Rubric,
@@ -21,6 +23,7 @@ from human_formation_benchmark.models import (
     ScoreReport,
     Trajectory,
     UserState,
+    WorldviewLens,
 )
 from human_formation_benchmark.research import SourceRecord
 
@@ -40,6 +43,9 @@ MODELS = {
     "source-record": SourceRecord,
     "review-finding": ReviewFinding,
     "scenario-pack-manifest": ScenarioPackManifest,
+    "worldview-lens": WorldviewLens,
+    "perspective-contrast": PerspectiveContrast,
+    "adversarial-challenge": AdversarialChallenge,
 }
 
 

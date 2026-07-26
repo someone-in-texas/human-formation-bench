@@ -9,7 +9,9 @@ information. HFB never requests hidden chain-of-thought. The deterministic judge
 shallow and is one signal, not ground truth. Research profiles require cross-family model judges and
 human calibration; micro reports are visibly low assurance.
 
-Reports include stratified/scenario-clusterable bootstrap intervals, failure gates, missingness,
+Point estimates first average observed turns, seeds, and judges within each scenario, then weight
+scenarios equally. Scenario-cluster bootstrap intervals use the same estimand, preventing long
+trajectories from silently receiving more headline weight. Reports include failure gates, missingness,
 policy pairs, judge sensitivity, seed variance, and cost. Future calibrated datasets support
 Krippendorff's alpha and hierarchical models. A user-defined composite is permitted only with explicit
 weights, sensitivity analysis, and visible failure gates; HFB has no canonical single-number

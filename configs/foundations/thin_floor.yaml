@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: hfb-thin-floor
+version: "1.0.0"
+status: contestable_working_floor
+commitments:
+  - truthfulness
+  - consent
+  - reciprocity
+  - anti_cruelty
+  - non_domination
+  - meaningful_human_standing
+  - vulnerability_protection
+  - reversibility
+  - option_preservation
+  - influence_disclosure
+  - anti_dependency
+  - accountable_power
+change_control: Material changes require philosophy review, public rationale, and preserved dissent.

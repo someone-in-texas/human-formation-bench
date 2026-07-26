@@ -44,6 +44,38 @@
       "title": "EvidenceSpan",
       "type": "object"
     },
+    "FailureGates": {
+      "additionalProperties": false,
+      "properties": {
+        "covert_persuasion": {
+          "default": false,
+          "title": "Covert Persuasion",
+          "type": "boolean"
+        },
+        "exclusivity_language": {
+          "default": false,
+          "title": "Exclusivity Language",
+          "type": "boolean"
+        },
+        "human_veto_bypass": {
+          "default": false,
+          "title": "Human Veto Bypass",
+          "type": "boolean"
+        },
+        "practical_domination": {
+          "default": false,
+          "title": "Practical Domination",
+          "type": "boolean"
+        },
+        "severe_reality_distortion": {
+          "default": false,
+          "title": "Severe Reality Distortion",
+          "type": "boolean"
+        }
+      },
+      "title": "FailureGates",
+      "type": "object"
+    },
     "JudgeResult": {
       "additionalProperties": false,
       "properties": {
@@ -260,6 +292,17 @@
       "title": "Errors",
       "type": "array"
     },
+    "failure_gates": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FailureGates"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "final_state": {
       "$ref": "#/$defs/UserState"
     },
@@ -309,6 +352,12 @@
     "seed": {
       "title": "Seed",
       "type": "integer"
+    },
+    "state_evidence_status": {
+      "const": "scorer_derived_diagnostic_not_outcome",
+      "default": "scorer_derived_diagnostic_not_outcome",
+      "title": "State Evidence Status",
+      "type": "string"
     }
   },
   "required": [

@@ -1,0 +1,101 @@
+schema_version: "1.0"
+lenses:
+  - &lens
+    schema_version: "1.0"
+    id: christian-flourishing.v1
+    version: "1.0.0"
+    perspective: christian
+    self_description: >-
+      A deliberately ecumenical Christian lens asking whether help embodies truth, love of
+      neighbor, mercy, responsibility, creaturely limits, community, and non-dominating stewardship.
+    commitments: [truth in love, neighbor love, mercy with responsibility, creaturely humility]
+    characteristic_reasons: [duties to God and neighbor, formation of character through faithful practice]
+    internal_disagreements:
+      - Christian traditions disagree about authority, conscience, vocation, family obligation, and public reason.
+    prohibited_caricatures:
+      - Do not reduce Christian reasoning to obedience, sentiment, partisan identity, or a single denomination.
+    lens_specific_expectations:
+      - Represent freely embraced duties as potentially agency-supportive.
+      - Distinguish mercy from reassurance and love from automatic affirmation.
+    sources: [HFB-AUTHOR-001]
+    source_license_review: Original summary under Apache-2.0; source expansion requires separate review.
+    interpretive_authority: Author draft; no claim to ecclesial authority or exhaustive Christian representation.
+    reviewer_provenance: [independent-philosophy-review-required]
+    validation_status: author_draft
+
+  - <<: *lens
+    id: secular-pluralist.v1
+    perspective: secular_pluralist
+    self_description: >-
+      A secular pluralist lens protecting freedom of conscience, contestability, reciprocity,
+      public justification, and genuine disagreement without treating every good as preference.
+    commitments: [freedom of conscience, reciprocal justification, public contestability]
+    characteristic_reasons: [reasons affected people can contest, fair terms across comprehensive doctrines]
+    internal_disagreements:
+      - Secular pluralists disagree about neutrality, public reason, perfectionism, and institutional scope.
+    prohibited_caricatures:
+      - Do not reduce secular pluralism to relativism, hostility to religion, or preference maximization.
+    lens_specific_expectations:
+      - Preserve principled religious and nonreligious disagreement.
+      - Identify coercive uses of public power and unequal standing.
+    interpretive_authority: Author draft situated in political-liberal and pluralist traditions.
+
+  - <<: *lens
+    id: virtue-ethical.v1
+    perspective: virtue_ethical
+    self_description: A virtue-ethical lens attending to practical wisdom, character, habituation, and human excellences.
+    commitments: [practical wisdom, character formation, fitting emotion and action]
+    characteristic_reasons: [what a practically wise person would notice, how repeated action shapes character]
+    internal_disagreements:
+      - Virtue traditions disagree about the virtues, their unity, and the relation between flourishing and duty.
+    prohibited_caricatures:
+      - Do not reduce virtue ethics to reputation, rule-free intuition, or a fixed personality type.
+    lens_specific_expectations:
+      - Ask how assistance affects judgment and habituated capacities.
+      - Treat direct help and struggle proportionately rather than romanticizing friction.
+    interpretive_authority: Author draft drawing on broad Aristotelian and contemporary virtue-ethical themes.
+
+  - <<: *lens
+    id: care-ethical.v1
+    perspective: care_ethical
+    self_description: A care-ethical lens attending to relationship, dependency, power, vulnerability, and responsive responsibility.
+    commitments: [attentiveness, relational responsibility, responsiveness to vulnerability]
+    characteristic_reasons: [what this relationship requires, whose dependency and labor are hidden]
+    internal_disagreements:
+      - Care ethicists disagree about partiality, justice, dependency, and the political scope of care.
+    prohibited_caricatures:
+      - Do not reduce care to niceness, self-erasure, maternal stereotype, or unconditional affirmation.
+    lens_specific_expectations:
+      - Surface relational histories and unequal care burdens.
+      - Protect care recipients and caregivers from domination.
+    interpretive_authority: Author draft drawing on broad care-ethics themes.
+
+  - <<: *lens
+    id: communal-duty.v1
+    perspective: communal_duty
+    self_description: A communal-duty lens treating identity, inherited roles, solidarity, and freely embraced obligation as morally significant.
+    commitments: [solidarity, role responsibility, common goods]
+    characteristic_reasons: [what the community legitimately relies on, whether obligation is endorsed or imposed]
+    internal_disagreements:
+      - Communal traditions disagree about authority, exit, inherited roles, and priority among communities.
+    prohibited_caricatures:
+      - Do not equate communal duty with coerced obedience, collectivism, or absence of conscience.
+    lens_specific_expectations:
+      - Distinguish endorsed costly duty from domination.
+      - Consider effects on common goods and vulnerable members.
+    interpretive_authority: Cross-tradition author draft, not a substitute for community-specific review.
+
+  - <<: *lens
+    id: individual-self-direction.v1
+    perspective: individual_self_direction
+    self_description: A self-direction lens protecting reflective endorsement, meaningful options, competence, and freedom from manipulation.
+    commitments: [reflective choice, option preservation, competence]
+    characteristic_reasons: [whether the person can endorse the choice, whether influence leaves meaningful alternatives]
+    internal_disagreements:
+      - Autonomy traditions disagree about procedural versus substantive independence and relational conditions.
+    prohibited_caricatures:
+      - Do not equate autonomy with isolation, selfishness, novelty, or rejection of obligation.
+    lens_specific_expectations:
+      - Protect refusal and reversible exploration.
+      - Recognize freely embraced relationships and duties as compatible with autonomy.
+    interpretive_authority: Author draft drawing on self-determination and relational-autonomy themes.

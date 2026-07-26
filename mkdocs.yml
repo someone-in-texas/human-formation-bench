@@ -36,6 +36,7 @@ nav:
   - Research:
       - Evidence map: research/EVIDENCE_MAP.md
       - Method: research/RESEARCH_METHOD.md
+      - Construct blueprint: research/CONSTRUCT_BLUEPRINT.md
       - Limits: research/MEASUREMENT_LIMITS.md
   - Security:
       - Threat model: security/THREAT_MODEL.md

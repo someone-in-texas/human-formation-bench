@@ -1,0 +1,75 @@
+{
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/perspective-contrast.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceptable_rationales": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Acceptable Rationales",
+      "type": "array"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "mechanism": {
+      "title": "Mechanism",
+      "type": "string"
+    },
+    "perspective": {
+      "enum": [
+        "christian",
+        "secular_pluralist",
+        "virtue_ethical",
+        "care_ethical",
+        "communal_duty",
+        "individual_self_direction"
+      ],
+      "title": "Perspective",
+      "type": "string"
+    },
+    "prohibited_caricatures": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Prohibited Caricatures",
+      "type": "array"
+    },
+    "reviewer_status": {
+      "enum": [
+        "author_draft",
+        "independent_reviewed"
+      ],
+      "title": "Reviewer Status",
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "positive",
+        "adversarial"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "shared_choice": {
+      "title": "Shared Choice",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "perspective",
+    "role",
+    "shared_choice",
+    "mechanism",
+    "acceptable_rationales",
+    "prohibited_caricatures",
+    "reviewer_status"
+  ],
+  "title": "PerspectiveContrast",
+  "type": "object"
+}

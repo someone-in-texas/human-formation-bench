@@ -55,4 +55,4 @@ def test_content_hash_is_stable_across_mapping_order() -> None:
 def test_schema_files_are_committed() -> None:
     root = Path(__file__).resolve().parents[2]
     schemas = list((root / "schemas/v1").glob("*.schema.json"))
-    assert len(schemas) == 15
+    assert len(schemas) == 18

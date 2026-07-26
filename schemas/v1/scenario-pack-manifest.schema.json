@@ -11,6 +11,15 @@
       "title": "Content Hash",
       "type": "string"
     },
+    "disclosure": {
+      "default": "public",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "title": "Disclosure",
+      "type": "string"
+    },
     "generated_at": {
       "format": "date-time",
       "title": "Generated At",

@@ -16,15 +16,33 @@ from uuid import uuid4
 from platformdirs import user_cache_path
 
 from . import __version__
-from .config import load_named_config, load_profile, load_scenarios
+from .config import load_named_config, load_profile, load_rubrics, load_scenarios
 from .hashing import content_hash
-from .models import Message, PriceEntry, RunManifest, Scenario, Trajectory, UserState
+from .models import (
+    EvidenceSpan,
+    Message,
+    PriceEntry,
+    RunManifest,
+    RunProfile,
+    Scenario,
+    Trajectory,
+    UserState,
+)
+from .pack import build_manifest
 from .pricing import BudgetExceeded, BudgetGuard, token_cost
 from .providers import FakeProvider, InspectProvider, Provider
 from .reporting import render_reports
-from .scoring import aggregate, deterministic_score
+from .scoring import aggregate, detect_failure_gates, deterministic_score
+from .security import redact
 from .simulation import transition
 from .storage import ContentCache, RunStore
+
+TURN_LIMITS = {
+    "single_turn": 1,
+    "short": 5,
+    "medium": 15,
+    "longitudinal": None,
+}
 
 
 @dataclass
@@ -47,6 +65,9 @@ class RunOptions:
     input_per_million_usd: float | None = None
     output_per_million_usd: float | None = None
     policies: list[str] | None = None
+    pack_path: Path | None = None
+    benchmark_exposure: str = "not_provided"
+    benchmark_specific_tuning: bool | None = None
 
 
 def _git_commit() -> str:
@@ -64,8 +85,10 @@ def _git_commit() -> str:
         return "unknown"
 
 
-def _select_scenarios(options: RunOptions, profile_limit: int) -> list[Scenario]:
-    scenarios = load_scenarios()
+def _select_scenarios(
+    options: RunOptions, profile_limit: int, *, apply_shard: bool = True
+) -> list[Scenario]:
+    scenarios = load_scenarios(pack_path=options.pack_path)
     if options.domains:
         scenarios = [scenario for scenario in scenarios if scenario.domain in options.domains]
     if options.dimensions:
@@ -87,6 +110,8 @@ def _select_scenarios(options: RunOptions, profile_limit: int) -> list[Scenario]
     scenarios = scenarios[:limit]
     if options.shards <= 0 or not 0 <= options.shard_index < options.shards:
         raise ValueError("shard index must satisfy 0 <= index < shards")
+    if not apply_shard:
+        return scenarios
     return [
         scenario
         for scenario in scenarios
@@ -128,6 +153,35 @@ def _provider(options: RunOptions) -> tuple[Provider, PriceEntry]:
     ), price
 
 
+def _configuration_payload(
+    options: RunOptions,
+    profile: RunProfile,
+    scenarios: list[Scenario],
+    policies: list[str],
+    price: PriceEntry,
+) -> dict[str, object]:
+    hash_options = {
+        key: value
+        for key, value in options.__dict__.items()
+        if key not in {"shard_index", "output_root", "cache_root", "pack_path"}
+    }
+    return {
+        "options": {
+            **hash_options,
+            "dimensions": sorted(options.dimensions),
+            "domains": sorted(options.domains),
+        },
+        "profile": profile.model_dump(mode="json"),
+        "scenarios": [scenario.model_dump(mode="json") for scenario in scenarios],
+        "policies": [load_named_config("policies", policy_id) for policy_id in policies],
+        "rubrics": [rubric.model_dump(mode="json") for rubric in load_rubrics()],
+        "judges": [load_named_config("judges", judge_id) for judge_id in options.judge_models],
+        "price": price.model_dump(mode="json"),
+        "simulator": "deterministic-derived-diagnostic-v1",
+        "scorer": "deterministic-detector-v1",
+    }
+
+
 def _manifest(
     run_id: str,
     options: RunOptions,
@@ -135,22 +189,13 @@ def _manifest(
     policies: list[str],
     seeds: list[int],
     budget_usd: float,
+    profile: RunProfile,
+    price: PriceEntry,
+    all_scenarios: list[Scenario],
 ) -> RunManifest:
     now = datetime.now(UTC)
-    hash_options = {
-        key: value
-        for key, value in options.__dict__.items()
-        if key not in {"shard_index", "output_root", "cache_root"}
-    }
-    config_payload = {
-        "options": {
-            **hash_options,
-            "dimensions": sorted(options.dimensions),
-            "domains": sorted(options.domains),
-        },
-        "policies": policies,
-        "seeds": seeds,
-    }
+    config_payload = _configuration_payload(options, profile, scenarios, policies, price)
+    pack_manifest = build_manifest(options.pack_path)
     return RunManifest(
         run_id=run_id,
         status="running",
@@ -161,10 +206,16 @@ def _manifest(
         judge_models=options.judge_models,
         policies=policies,
         seeds=seeds,
-        scenario_pack_hash=content_hash(
-            [scenario.model_dump(mode="json") for scenario in scenarios]
-        ),
+        scenario_pack_hash=pack_manifest.content_hash,
+        scenario_pack_id=pack_manifest.pack_id,
+        scenario_pack_canonical=pack_manifest.canonical,
+        scenario_pack_disclosure=pack_manifest.disclosure,
+        benchmark_exposure=options.benchmark_exposure,
+        benchmark_specific_tuning=options.benchmark_specific_tuning,
         config_hash=content_hash(config_payload),
+        run_family_hash=content_hash(
+            _configuration_payload(options, profile, all_scenarios, policies, price)
+        ),
         git_commit=_git_commit(),
         package_version=__version__,
         python_version=sys.version.split()[0],
@@ -172,6 +223,7 @@ def _manifest(
         budget_usd=budget_usd,
         hard_stop=options.hard_stop,
         reserve_fraction=options.reserve_fraction,
+        expected_sample_count=len(scenarios) * len(policies) * len(seeds),
         shard_index=options.shard_index,
         shards=options.shards,
         redacted_environment={
@@ -184,16 +236,48 @@ def _manifest(
     )
 
 
+def _persistence_safe(trajectory: Trajectory, *, private_pack: bool) -> Trajectory:
+    """Redact persistence while preserving in-memory scoring semantics."""
+
+    messages = [
+        message.model_copy(
+            update={
+                "content": (
+                    f"[{message.role} content withheld for private pack]"
+                    if private_pack
+                    else redact(message.content)
+                )
+            }
+        )
+        for message in trajectory.messages
+    ]
+    results = [
+        result.model_copy(
+            update={
+                "evidence": [
+                    EvidenceSpan(message_index=span.message_index, quote=redact(span.quote))
+                    for span in result.evidence
+                ],
+                "rationale": redact(result.rationale),
+            }
+        )
+        for result in trajectory.judge_results
+    ]
+    return trajectory.model_copy(update={"messages": messages, "judge_results": results})
+
+
 class _Pacer:
-    def __init__(self, rpm: int) -> None:
-        self.interval = 60 / rpm
+    def __init__(self, rpm: int, tpm: int) -> None:
+        self.request_interval = 60 / rpm
+        self.tpm = tpm
         self.last = 0.0
         self.lock = asyncio.Lock()
 
-    async def wait(self) -> None:
+    async def wait(self, estimated_tokens: int) -> None:
         async with self.lock:
             loop = asyncio.get_running_loop()
-            delay = self.last + self.interval - loop.time()
+            interval = max(self.request_interval, 60 * estimated_tokens / self.tpm)
+            delay = self.last + interval - loop.time()
             if delay > 0:
                 await asyncio.sleep(delay)
             self.last = loop.time()
@@ -207,6 +291,7 @@ async def _trajectory(
     provider: Provider,
     price: PriceEntry,
     turns: int,
+    max_input_tokens: int,
     max_output_tokens: int,
     budget: BudgetGuard,
     cache: ContentCache,
@@ -234,19 +319,25 @@ async def _trajectory(
         }
         key = cache.key(cache_payload)
         response = cache.get(key)
-        high_estimate = (
-            token_cost(
-                sum(len(message.content) for message in messages) // 3,
-                max_output_tokens,
-                input_per_million_usd=price.input_per_million_usd,
-                output_per_million_usd=price.output_per_million_usd,
+        conservative_input_tokens = sum(len(message.content) for message in messages) // 3 + 1
+        if conservative_input_tokens > max_input_tokens:
+            raise ValueError(
+                "estimated input exceeds the profile's declared maximum; "
+                "reduce the trajectory horizon or select a larger profile"
             )
-            * 1.5
+        high_estimate = token_cost(
+            max_input_tokens,
+            max_output_tokens,
+            input_per_million_usd=price.input_per_million_usd,
+            output_per_million_usd=price.output_per_million_usd,
         )
         if response is None:
             await budget.reserve(high_estimate)
             try:
-                await pacer.wait()
+                estimated_tokens = (
+                    sum(len(message.content) for message in messages) // 3 + max_output_tokens
+                )
+                await pacer.wait(estimated_tokens)
                 response = await provider.generate(
                     messages,
                     policy_id=policy_id,
@@ -286,6 +377,9 @@ async def _trajectory(
         initial_state=initial_state,
         final_state=state,
         judge_results=all_results,
+        failure_gates=detect_failure_gates(
+            message.content for message in messages if message.role == "assistant"
+        ),
         cost_usd=total_cost,
         latency_ms=total_latency,
     )
@@ -293,6 +387,14 @@ async def _trajectory(
 
 async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) -> Path:
     profile = load_profile(options.profile)
+    unsupported_judges = [judge for judge in options.judge_models if judge != "deterministic-v1"]
+    if unsupported_judges:
+        raise ValueError(
+            "configured model judges are not executable in this alpha; "
+            "provide --judge deterministic-v1 for an explicitly pre-validation run. "
+            f"Unavailable: {', '.join(unsupported_judges)}"
+        )
+    all_scenarios = _select_scenarios(options, profile.scenario_limit, apply_shard=False)
     scenarios = _select_scenarios(options, profile.scenario_limit)
     if not scenarios:
         raise ValueError("scenario filters selected no scenarios")
@@ -324,38 +426,45 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             policies,
             profile.seeds,
             budget_usd,
+            profile,
+            price,
+            all_scenarios,
         )
+        resolved_payload = _configuration_payload(options, profile, scenarios, policies, price)
         store.create(
             manifest,
             {
-                "profile": profile.model_dump(mode="json"),
-                "options": {
-                    **options.__dict__,
-                    "output_root": str(options.output_root),
-                    "cache_root": str(options.cache_root) if options.cache_root else None,
-                    "dimensions": sorted(options.dimensions),
-                    "domains": sorted(options.domains),
-                },
-                "scenarios": [scenario.id for scenario in scenarios],
-                "price": price.model_dump(mode="json"),
+                **resolved_payload,
+                "scenario_ids": [scenario.id for scenario in scenarios],
+                "pack_path": str(options.pack_path) if options.pack_path else None,
             },
+        )
+    current_config_hash = content_hash(
+        _configuration_payload(options, profile, scenarios, policies, price)
+    )
+    if current_config_hash != manifest.config_hash:
+        raise ValueError(
+            "resume input hash mismatch: profile, pack, policy, rubric, judge, or price changed"
         )
     completed = set(manifest.completed_sample_ids)
     existing = {trajectory.id: trajectory for trajectory in store.trajectories()}
     completed.update(existing)
-    cache_root = options.cache_root or user_cache_path("hfb") / "responses"
+    cache_root = (
+        run_dir / "private-cache"
+        if manifest.scenario_pack_disclosure == "private"
+        else options.cache_root or user_cache_path("hfb") / "responses"
+    )
     cache = ContentCache(cache_root)
     guard = BudgetGuard(budget_usd, options.reserve_fraction)
     guard.spent = manifest.spent_usd
-    pacer = _Pacer(profile.rpm if not options.model.startswith("fake/") else 1_000_000)
+    pacer = _Pacer(
+        profile.rpm if not options.model.startswith("fake/") else 1_000_000,
+        profile.tpm if not options.model.startswith("fake/") else 1_000_000_000,
+    )
     semaphore = asyncio.Semaphore(profile.concurrency)
-    work = [
-        (scenario, policy_id, seed)
-        for scenario in scenarios
-        for policy_id in policies
-        for seed in profile.seeds
-        if f"{scenario.id}--{policy_id}--{seed}" not in completed
-    ]
+    queue: asyncio.Queue[tuple[Scenario, str, int] | None] = asyncio.Queue(
+        maxsize=max(1, profile.concurrency * 2)
+    )
 
     async def execute(scenario: Scenario, policy_id: str, seed: int) -> None:
         nonlocal manifest
@@ -370,14 +479,19 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                     price=price,
                     turns=min(
                         profile.trajectory_turns,
-                        1 if scenario.trajectory_length.value == "single_turn" else 3,
+                        TURN_LIMITS[scenario.trajectory_length.value] or profile.trajectory_turns,
                     ),
+                    max_input_tokens=profile.max_input_tokens,
                     max_output_tokens=profile.max_output_tokens,
                     budget=guard,
                     cache=cache,
                     pacer=pacer,
                 )
-                await store.append(trajectory)
+                safe_trajectory = _persistence_safe(
+                    trajectory,
+                    private_pack=manifest.scenario_pack_disclosure == "private",
+                )
+                await store.append(safe_trajectory)
                 existing[trajectory.id] = trajectory
                 manifest.completed_sample_ids.append(trajectory_id)
             except BudgetExceeded as error:
@@ -385,13 +499,35 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                 manifest.errors.append(str(error))
             except Exception as error:
                 manifest.failed_sample_ids.append(trajectory_id)
-                manifest.errors.append(f"{trajectory_id}: {type(error).__name__}: {error}")
+                manifest.errors.append(redact(f"{trajectory_id}: {type(error).__name__}: {error}"))
             manifest.spent_usd = guard.spent
             manifest.updated_at = datetime.now(UTC)
             store.update_manifest(manifest)
 
+    async def produce() -> None:
+        for scenario in scenarios:
+            for policy_id in policies:
+                for seed in profile.seeds:
+                    trajectory_id = f"{scenario.id}--{policy_id}--{seed}"
+                    if trajectory_id not in completed:
+                        await queue.put((scenario, policy_id, seed))
+        for _ in range(profile.concurrency):
+            await queue.put(None)
+
+    async def consume() -> None:
+        while True:
+            item = await queue.get()
+            try:
+                if item is None:
+                    return
+                await execute(*item)
+            finally:
+                queue.task_done()
+
     try:
-        await asyncio.gather(*(execute(*item) for item in work))
+        producer = asyncio.create_task(produce())
+        workers = [asyncio.create_task(consume()) for _ in range(profile.concurrency)]
+        await asyncio.gather(producer, *workers)
     except (KeyboardInterrupt, asyncio.CancelledError):
         manifest.status = "interrupted"
         manifest.updated_at = datetime.now(UTC)
@@ -403,7 +539,22 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
     manifest.spent_usd = guard.spent
     manifest.updated_at = datetime.now(UTC)
     store.update_manifest(manifest)
-    report = aggregate(trajectories, assurance=profile.assurance)
+    report = aggregate(
+        trajectories,
+        assurance=profile.assurance,
+        configured_judges=options.judge_models,
+        target_model=options.model,
+    )
+    if manifest.status != "completed":
+        report = report.model_copy(
+            update={
+                "assurance": "unavailable-partial",
+                "assurance_reasons": [
+                    *report.assurance_reasons,
+                    f"run status is {manifest.status}",
+                ],
+            }
+        )
     render_reports(run_dir, manifest, report, trajectories)
     store.export_columnar(trajectories)
     return run_dir
@@ -421,15 +572,38 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
                 raise ValueError(f"duplicate trajectory across shards: {trajectory.id}")
             trajectories[trajectory.id] = trajectory
     base = manifests[0]
-    if any(manifest.config_hash != base.config_hash for manifest in manifests[1:]):
-        raise ValueError("shards have different resolved configurations")
+    if len(manifests) != base.shards:
+        raise ValueError(f"expected {base.shards} shards, received {len(manifests)}")
+    indices = [manifest.shard_index for manifest in manifests]
+    if sorted(indices) != list(range(base.shards)):
+        raise ValueError("shard indices must be the complete unique range 0..shards-1")
+    if any(manifest.status != "completed" for manifest in manifests):
+        raise ValueError("all shards must be completed before merge")
+    if any(manifest.run_family_hash != base.run_family_hash for manifest in manifests[1:]):
+        raise ValueError("shards have different run-family configurations")
+    provenance_fields = (
+        "git_commit",
+        "package_version",
+        "scenario_pack_hash",
+        "model",
+        "profile",
+        "scenario_pack_id",
+        "scenario_pack_disclosure",
+    )
+    if any(
+        getattr(manifest, field) != getattr(base, field)
+        for manifest in manifests[1:]
+        for field in provenance_fields
+    ):
+        raise ValueError("shards have incompatible provenance")
     merged = base.model_copy(
         update={
             "run_id": output_dir.name,
             "status": "completed",
             "shard_index": 0,
-            "shards": len(shard_dirs),
+            "shards": base.shards,
             "spent_usd": sum(manifest.spent_usd for manifest in manifests),
+            "expected_sample_count": sum(manifest.expected_sample_count for manifest in manifests),
             "completed_sample_ids": sorted(trajectories),
             "updated_at": datetime.now(UTC),
         }
@@ -439,7 +613,12 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
     output_lines = "\n".join(item.model_dump_json() for item in trajectories.values())
     (output_dir / "results.jsonl").write_text(output_lines + "\n", encoding="utf-8")
     values = list(trajectories.values())
-    report = aggregate(values, assurance="research")
+    report = aggregate(
+        values,
+        assurance="research",
+        configured_judges=merged.judge_models,
+        target_model=merged.model,
+    )
     render_reports(output_dir, merged, report, values)
     store.export_columnar(values)
     return output_dir

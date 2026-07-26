@@ -88,12 +88,16 @@ human_formation_benchmark = ["resources/**/*.yaml", "resources/**/*.json", "reso
 ]
 "share/human-formation-benchmark/configs/policies" = ["configs/policies/policies.yaml"]
 "share/human-formation-benchmark/configs/constitutions" = ["configs/constitutions/constitutions.yaml"]
+"share/human-formation-benchmark/configs/foundations" = ["configs/foundations/thin_floor.yaml"]
+"share/human-formation-benchmark/configs/lenses" = ["configs/lenses/lenses.yaml"]
 "share/human-formation-benchmark/configs/judges" = ["configs/judges/deterministic.yaml"]
 "share/human-formation-benchmark/configs" = ["configs/prices.yaml"]
 "share/human-formation-benchmark/data/public_core" = [
   "data/public_core/manifest.yaml",
   "data/public_core/scenarios.yaml",
+  "data/public_core/perspective_contrasts.yaml",
 ]
+"share/human-formation-benchmark/data/challenges" = ["data/challenges/public_red_team.yaml"]
 "share/human-formation-benchmark/data/controls" = ["data/controls/known_groups.yaml"]
 "share/human-formation-benchmark/data/fixtures" = ["data/fixtures/golden_transcript.json"]
 "share/human-formation-benchmark/rubrics" = ["rubrics/core.yaml"]

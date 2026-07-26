@@ -63,7 +63,8 @@ def main() -> None:
     ).stdout
     if status:
         raise SystemExit("working tree must be clean")
-    if args.tag not in (root / "CHANGELOG.md").read_text(encoding="utf-8"):
+    changelog_version = args.tag.removeprefix("v")
+    if changelog_version not in (root / "CHANGELOG.md").read_text(encoding="utf-8"):
         raise SystemExit(f"CHANGELOG.md does not mention {args.tag}")
     if args.tag != "v0.1.0-alpha.1":
         raise SystemExit("update the explicit alpha version gates before releasing another tag")

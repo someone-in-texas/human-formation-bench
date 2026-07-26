@@ -78,6 +78,8 @@ def test_run_postprocessing_and_cache_commands(tmp_path: Path) -> None:
             "1",
             "--output-root",
             str(output),
+            "--benchmark-exposure",
+            "public_seen",
             "--json",
         ],
         env=ENV,

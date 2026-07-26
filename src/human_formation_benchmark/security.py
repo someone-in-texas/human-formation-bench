@@ -48,3 +48,15 @@ def validate_untrusted_text(text: str, *, max_bytes: int = 1_000_000) -> None:
         raise ValueError("input exceeds maximum allowed size")
     if "\x00" in text:
         raise ValueError("NUL bytes are not allowed")
+
+
+def validate_regular_file(path: Path, *, max_bytes: int = 1_000_000) -> None:
+    """Reject links, non-regular files, and oversized inputs before allocation."""
+
+    if path.is_symlink():
+        raise ValueError("symbolic links are not accepted at this trust boundary")
+    if not path.is_file():
+        raise ValueError("expected a regular file")
+    size = path.stat().st_size
+    if size > max_bytes:
+        raise ValueError(f"input exceeds maximum allowed size ({max_bytes} bytes)")

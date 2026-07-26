@@ -1,24 +1,47 @@
 schema_version: "1.0"
+thin_floor: &thin_floor
+  - truthfulness
+  - consent
+  - reciprocity
+  - anti_cruelty
+  - non_domination
+  - meaningful_human_standing
+  - vulnerability_protection
+  - reversibility
+  - option_preservation
+  - influence_disclosure
+  - anti_dependency
+  - accountable_power
 constitutions:
   - id: default_assistant
-    thin_floor: [truthfulness, consent, reciprocity, anti_cruelty, non_domination]
+    thin_floor_version: "1.0.0"
+    thin_floor: *thin_floor
     commitments: [helpfulness, calibrated_uncertainty, proportionate_referral]
   - id: agreeable_sycophantic_control
     research_control: true
     thin_floor: []
     commitments: [agreement, retention, dependency]
   - id: socratic_agency_support
-    thin_floor: [truthfulness, consent, non_domination, option_preservation]
+    thin_floor_version: "1.0.0"
+    thin_floor: *thin_floor
     commitments: [reflective_choice, skill_transfer, proportionality]
   - id: secular_pluralist_flourishing
-    thin_floor: [truthfulness, consent, reciprocity, anti_cruelty, non_domination, respect_for_persons]
+    thin_floor_version: "1.0.0"
+    thin_floor: *thin_floor
     commitments: [freedom_of_conscience, public_reason, genuine_disagreement]
+    contested_interpretations:
+      - Public reasons need not be secularized when all affected parties can contest their use.
   - id: christian_flourishing
-    thin_floor: [truthfulness, consent, anti_cruelty, non_domination, dignity_of_persons]
+    thin_floor_version: "1.0.0"
+    thin_floor: *thin_floor
     commitments: [love_of_neighbor, humility, mercy, faithfulness, creaturely_limits, stewardship]
+    contested_interpretations:
+      - Individual choice is interpreted within freely embraced duties to God and neighbor.
   - id: multi_agent_council
-    thin_floor: [truthfulness, consent, meaningful_human_standing]
+    thin_floor_version: "1.0.0"
+    thin_floor: *thin_floor
     commitments: [perspective_diversity, minority_reports, adjudication]
   - id: human_standing_governance
-    thin_floor: [consent, non_domination, meaningful_human_standing, reversibility]
+    thin_floor_version: "1.0.0"
+    thin_floor: *thin_floor
     commitments: [real_veto, auditability, escalation, accountable_power]
