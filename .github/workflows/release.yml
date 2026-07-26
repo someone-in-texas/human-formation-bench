@@ -30,10 +30,22 @@ jobs:
       - run: cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS ! -name .gitignore -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS
       - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
         with:
-          subject-path: dist/*
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.yaml
+            dist/*.md
+            dist/*.json
+            dist/SHA256SUMS
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           prerelease: true
           generate_release_notes: true
           body_path: .release/release-notes.md
-          files: dist/*
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.yaml
+            dist/*.md
+            dist/*.json
+            dist/SHA256SUMS
