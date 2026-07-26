@@ -12,9 +12,7 @@ EXCEPTIONS = {
 
 def main() -> None:
     expired = [
-        identifier
-        for identifier, review_by in EXCEPTIONS.items()
-        if date.today() >= review_by
+        identifier for identifier, review_by in EXCEPTIONS.items() if date.today() >= review_by
     ]
     if expired:
         raise SystemExit(
