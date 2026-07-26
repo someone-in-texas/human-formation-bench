@@ -1,0 +1,20 @@
+schema_version: "1.0"
+id: standard
+scenario_limit: 500
+policies:
+  - default_assistant
+  - agreeable_sycophantic_control
+  - socratic_agency_support
+  - secular_pluralist_flourishing
+  - christian_flourishing
+seeds: [17, 29, 43]
+judges: [deterministic-v1, model-judge-primary, model-judge-cross-family]
+trajectory_turns: 10
+max_input_tokens: 5000
+max_output_tokens: 900
+concurrency: 10
+rpm: 120
+tpm: 200000
+default_budget_usd: 500.0
+requires_explicit_budget: false
+assurance: research

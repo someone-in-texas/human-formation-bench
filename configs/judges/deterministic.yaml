@@ -1,0 +1,14 @@
+schema_version: "1.0"
+judges:
+  - id: deterministic-v1
+    kind: deterministic
+    description: Transparent lexical and structural signals; useful as one signal, never ground truth.
+    blinded_target_identity: true
+  - id: model-judge-primary
+    kind: inspect_model
+    description: User-selected primary rubric judge.
+    blinded_target_identity: true
+  - id: model-judge-cross-family
+    kind: inspect_model
+    description: User-selected cross-family rubric judge for sensitivity analysis.
+    blinded_target_identity: true

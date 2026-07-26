@@ -1,0 +1,23 @@
+schema_version: "1.0"
+nodes:
+  - {id: policy, class: model_policy}
+  - {id: response, class: response_features}
+  - {id: incentives, class: interaction_incentives}
+  - {id: action, class: user_action}
+  - {id: transition, class: simulated_state_transition}
+  - {id: short_term, class: short_term_outcome}
+  - {id: repeated_use, class: repeated_use_pattern}
+  - {id: formation, class: formation_dimension}
+  - {id: validation, class: real_world_validation_evidence}
+edges:
+  - {from: policy, to: response, confidence: medium}
+  - {from: response, to: incentives, confidence: medium}
+  - {from: incentives, to: action, confidence: low}
+  - {from: action, to: transition, confidence: simulated}
+  - {from: transition, to: short_term, confidence: simulated}
+  - {from: short_term, to: repeated_use, confidence: low}
+  - {from: repeated_use, to: formation, confidence: unvalidated}
+  - {from: validation, to: formation, relation: calibration}
+confounders: [prior social support, baseline distress, stakes, culture, user goals, product context]
+moderators: [expertise, AI trust, urgency, worldview, uncertainty tolerance, attachment tendency]
+uncertainty: [judge error, simulator misspecification, scenario sampling, deployment shift]

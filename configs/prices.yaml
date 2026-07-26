@@ -1,0 +1,21 @@
+schema_version: "1.0"
+registry_version: "2026-07-25"
+prices:
+  - provider: fake
+    model_pattern: "fake/*"
+    input_per_million_usd: 0
+    cached_input_per_million_usd: 0
+    output_per_million_usd: 0
+    currency: USD
+    effective_date: "2026-07-25"
+    source_url: "https://github.com/someone-in-texas/human-formation-bench"
+    last_verified_date: "2026-07-25"
+  - provider: user_override_required
+    model_pattern: "*"
+    input_per_million_usd: 0
+    cached_input_per_million_usd: null
+    output_per_million_usd: 0
+    currency: USD
+    effective_date: "2026-07-25"
+    source_url: "https://inspect.aisi.org.uk/models.html"
+    last_verified_date: "2026-07-25"

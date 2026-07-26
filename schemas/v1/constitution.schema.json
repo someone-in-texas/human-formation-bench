@@ -1,0 +1,42 @@
+{
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/constitution.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "commitments": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Commitments",
+      "type": "array"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "research_control": {
+      "default": false,
+      "title": "Research Control",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "thin_floor": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Thin Floor",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "thin_floor",
+    "commitments"
+  ],
+  "title": "Constitution",
+  "type": "object"
+}

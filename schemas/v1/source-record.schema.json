@@ -1,0 +1,89 @@
+{
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/source-record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "access_date": {
+      "title": "Access Date",
+      "type": "string"
+    },
+    "authors": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Authors",
+      "type": "array"
+    },
+    "does_not_establish": {
+      "minLength": 10,
+      "title": "Does Not Establish",
+      "type": "string"
+    },
+    "doi": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Doi"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "informs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Informs",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "url": {
+      "format": "uri",
+      "maxLength": 2083,
+      "minLength": 1,
+      "title": "Url",
+      "type": "string"
+    },
+    "year": {
+      "maximum": 2100,
+      "minimum": 1900,
+      "title": "Year",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "authors",
+    "year",
+    "status",
+    "url",
+    "access_date",
+    "informs",
+    "does_not_establish"
+  ],
+  "title": "SourceRecord",
+  "type": "object"
+}

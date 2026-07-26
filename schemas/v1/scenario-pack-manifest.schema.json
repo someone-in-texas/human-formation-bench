@@ -1,0 +1,60 @@
+{
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1/scenario-pack-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonical": {
+      "title": "Canonical",
+      "type": "boolean"
+    },
+    "content_hash": {
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "human_approved": {
+      "title": "Human Approved",
+      "type": "boolean"
+    },
+    "license": {
+      "default": "CC-BY-4.0",
+      "title": "License",
+      "type": "string"
+    },
+    "pack_id": {
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "scenario_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Scenario Ids",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack_id",
+    "version",
+    "canonical",
+    "human_approved",
+    "scenario_ids",
+    "content_hash",
+    "generated_at"
+  ],
+  "title": "ScenarioPackManifest",
+  "type": "object"
+}

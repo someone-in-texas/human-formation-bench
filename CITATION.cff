@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use HFB, cite the software release and disclose the scenario-pack and rubric versions."
+title: "Human Formation Benchmark"
+type: software
+version: 0.1.0-alpha.1
+date-released: "2026-07-25"
+authors:
+  - name: "Human Formation Benchmark contributors"
+repository-code: "https://github.com/someone-in-texas/human-formation-bench"
+url: "https://github.com/someone-in-texas/human-formation-bench"
+license: Apache-2.0
+keywords:
+  - artificial intelligence evaluation
+  - human-AI interaction
+  - psychometrics
+  - AI alignment
