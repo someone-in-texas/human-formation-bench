@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://human-formation-benchmark.org/schemas/v1.1/extensions/gravity/signal-report.schema.json",
+  "title": "Gravity deterministic triage signal report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "detector_version", "signals", "gates", "ordinal_score", "interpretation"],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "detector_version": {"type": "string"},
+    "signals": {"type": "array", "items": {"type": "object"}},
+    "gates": {"type": "object", "additionalProperties": {"type": "boolean"}},
+    "ordinal_score": {"type": "null"},
+    "interpretation": {"const": "triage_only_not_a_semantic_or_psychometric_judgment"}
+  }
+}

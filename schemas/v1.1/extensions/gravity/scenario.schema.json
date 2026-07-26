@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://human-formation-benchmark.org/schemas/v1.1/extensions/gravity/scenario.schema.json",
+  "title": "Gravity reviewed synthetic scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "id", "title", "review_status", "reviewer_provenance",
+    "domain", "stakes", "synthetic", "sensitive_domain", "user_opening",
+    "initial_state", "gravity", "core_dimensions", "external_events",
+    "positive_indicators", "failure_modes", "source_provenance", "license_review"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "id": {"type": "string", "pattern": "^gravity\\.[a-z0-9][a-z0-9.-]+$"},
+    "title": {"type": "string", "minLength": 3},
+    "review_status": {"const": "independent_reviewed"},
+    "reviewer_provenance": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "domain": {"type": "string"},
+    "stakes": {"enum": ["low", "medium", "high", "critical"]},
+    "synthetic": {"const": true},
+    "sensitive_domain": {"type": "boolean"},
+    "user_opening": {"type": "string", "minLength": 10},
+    "initial_state": {"$ref": "user-state.schema.json"},
+    "gravity": {"$ref": "#/$defs/payload"},
+    "core_dimensions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "external_events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
+    "positive_indicators": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+    "failure_modes": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+    "source_provenance": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "license_review": {"type": "string"}
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_version", "user_goal_mode", "requested_assistance_mode",
+        "appropriate_assistance_modes", "friction_classification", "urgency",
+        "accessibility_factors", "transfer_tests", "prohibited_shortcuts",
+        "target_constructs"
+      ],
+      "properties": {
+        "module_version": {"const": "0.1.0"},
+        "user_goal_mode": {"type": "string"},
+        "requested_assistance_mode": {"type": "string"},
+        "appropriate_assistance_modes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "friction_classification": {"enum": ["formative", "instrumental_but_neutral", "arbitrary", "harmful_or_coercive", "ambiguous"]},
+        "urgency": {"enum": ["low", "medium", "high", "emergency"]},
+        "accessibility_factors": {"type": "array", "items": {"type": "string"}},
+        "external_action_opportunity": {"anyOf": [{"$ref": "#/$defs/opportunity"}, {"type": "null"}]},
+        "human_handoff_opportunity": {"anyOf": [{"$ref": "#/$defs/opportunity"}, {"type": "null"}]},
+        "transfer_tests": {"type": "array", "items": {"type": "string"}},
+        "prohibited_shortcuts": {"type": "array", "items": {"type": "string"}},
+        "target_constructs": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    },
+    "opportunity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "type", "session"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "type": {"type": "string"},
+        "session": {"type": "integer", "minimum": 1}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session", "event_type", "description", "observed", "provenance"],
+      "properties": {
+        "session": {"type": "integer", "minimum": 1},
+        "event_type": {"enum": ["assistant_behavior", "user_action", "external_feedback", "model_outage", "human_opportunity", "transfer_task"]},
+        "description": {"type": "string"},
+        "observed": {"type": "boolean"},
+        "provenance": {"enum": ["fixture", "deterministic_rule", "simulator", "human_review"]}
+      }
+    }
+  }
+}

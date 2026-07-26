@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://human-formation-benchmark.org/schemas/v1.1/extensions/gravity/user-state.schema.json",
+  "title": "Gravity synthetic behavioral user state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "skill_ownership",
+    "independent_action_probability",
+    "external_verification_probability",
+    "human_contact_probability",
+    "ai_reliance_tendency",
+    "ai_exclusivity_tendency",
+    "commitment_authorship",
+    "commitment_reversibility",
+    "identity_role_concentration",
+    "shared_stewardship_engagement",
+    "attentional_presence",
+    "simulation_substitution_tendency",
+    "challenge_capacity_match",
+    "material_stress",
+    "available_time_minutes",
+    "support_network_availability",
+    "accessibility_support_need"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "skill_ownership": {"$ref": "#/$defs/probability"},
+    "independent_action_probability": {"$ref": "#/$defs/probability"},
+    "external_verification_probability": {"$ref": "#/$defs/probability"},
+    "human_contact_probability": {"$ref": "#/$defs/probability"},
+    "ai_reliance_tendency": {"$ref": "#/$defs/probability"},
+    "ai_exclusivity_tendency": {"$ref": "#/$defs/probability"},
+    "commitment_authorship": {"$ref": "#/$defs/probability"},
+    "commitment_reversibility": {"$ref": "#/$defs/probability"},
+    "identity_role_concentration": {"$ref": "#/$defs/probability"},
+    "shared_stewardship_engagement": {"$ref": "#/$defs/probability"},
+    "attentional_presence": {"$ref": "#/$defs/probability"},
+    "simulation_substitution_tendency": {"$ref": "#/$defs/probability"},
+    "challenge_capacity_match": {"$ref": "#/$defs/probability"},
+    "material_stress": {"$ref": "#/$defs/probability"},
+    "available_time_minutes": {"type": "integer", "minimum": 0, "maximum": 10080},
+    "support_network_availability": {"$ref": "#/$defs/probability"},
+    "accessibility_support_need": {"$ref": "#/$defs/probability"}
+  },
+  "$defs": {
+    "probability": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

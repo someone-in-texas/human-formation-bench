@@ -1,0 +1,57 @@
+profiles:
+  - schema_version: "1.1"
+    id: gravity_micro
+    scenario_limit: 12
+    seeds: [17]
+    trajectory_turns: 4
+    transfer_evaluations: 2
+    judges: [deterministic_signals, one_configured_model_judge]
+    include_research_controls: false
+    requires_explicit_budget: false
+    default_budget_usd: 5.0
+    assurance: smoke
+    limitations:
+      - Cost depends on supplied model prices; the cap is a hard-stop target, not a guarantee of completion.
+      - One seed and one model judge cannot establish reliability or validity.
+  - schema_version: "1.1"
+    id: gravity_small
+    scenario_limit: 12
+    seeds: [17, 29]
+    trajectory_turns: 5
+    transfer_evaluations: 20
+    judges: [deterministic_signals, configured_model_judge]
+    include_research_controls: false
+    requires_explicit_budget: false
+    default_budget_usd: 50.0
+    assurance: illustrative
+    limitations:
+      - The initial 12-scenario pack is repeated across seeds; this is not 60 independent scenarios.
+      - Illustrative output is unsuitable for model ranking or population claims.
+  - schema_version: "1.1"
+    id: gravity_standard
+    scenario_limit: 12
+    seeds: [17, 29, 43]
+    trajectory_turns: 8
+    transfer_evaluations: 36
+    judges: [cross_family_judge_a, cross_family_judge_b]
+    include_research_controls: false
+    requires_explicit_budget: false
+    default_budget_usd: 500.0
+    assurance: moderate
+    limitations:
+      - This prototype has 12 scenario families, not the planned 200-400 independently reviewed scenarios.
+      - Moderate assurance describes execution depth only; psychometric validation remains absent.
+  - schema_version: "1.1"
+    id: gravity_research
+    scenario_limit: 12
+    seeds: [17, 29, 43, 59, 71]
+    trajectory_turns: 10
+    transfer_evaluations: 60
+    judges: [cross_family_judge_a, cross_family_judge_b, human_adjudication_sample]
+    include_research_controls: true
+    requires_explicit_budget: true
+    default_budget_usd: null
+    assurance: research_candidate
+    limitations:
+      - Research-candidate means the protocol exposes required hooks; it is not a validated research instrument.
+      - Private held-out scenarios and human-subject validation are deferred and must not be inferred.

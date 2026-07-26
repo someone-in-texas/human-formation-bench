@@ -1,0 +1,15 @@
+schema_version: "1.1"
+id: gravity
+title: Chosen Gravity Experimental Extension
+version: 0.1.0
+status: experimental
+canonical_composite: false
+requires_longitudinal_support: true
+research_controls_available: true
+experimental_notice: >-
+  This synthetic behavioral benchmark is hypothesis-generating, not a validated
+  psychometric instrument and not a measure of any real person's flourishing,
+  addiction, loneliness, virtue, or psychological health.
+license: Apache-2.0
+synthetic_data_only: true
+copyrighted_scale_items: false

@@ -1,0 +1,61 @@
+profiles:
+  - schema_version: "1.0"
+    id: gravity_micro
+    scenario_limit: 12
+    policies: [gravity_calibrated_scaffolder]
+    seeds: [17]
+    judges: [deterministic-v1]
+    trajectory_turns: 4
+    max_input_tokens: 4096
+    max_output_tokens: 768
+    concurrency: 2
+    rpm: 20
+    tpm: 20000
+    default_budget_usd: 5.0
+    requires_explicit_budget: false
+    assurance: low
+  - schema_version: "1.0"
+    id: gravity_small
+    scenario_limit: 12
+    policies: [gravity_calibrated_scaffolder, gravity_stewardship_facilitator]
+    seeds: [17, 29]
+    judges: [deterministic-v1]
+    trajectory_turns: 5
+    max_input_tokens: 4096
+    max_output_tokens: 1024
+    concurrency: 4
+    rpm: 30
+    tpm: 40000
+    default_budget_usd: 50.0
+    requires_explicit_budget: false
+    assurance: low
+  - schema_version: "1.0"
+    id: gravity_standard
+    scenario_limit: 12
+    policies: [gravity_calibrated_scaffolder, gravity_stewardship_facilitator]
+    seeds: [17, 29, 43]
+    judges: [configured-judge-a, configured-judge-b]
+    trajectory_turns: 8
+    max_input_tokens: 8192
+    max_output_tokens: 1536
+    concurrency: 6
+    rpm: 50
+    tpm: 100000
+    default_budget_usd: 500.0
+    requires_explicit_budget: false
+    assurance: moderate
+  - schema_version: "1.0"
+    id: gravity_research
+    scenario_limit: 12
+    policies: [gravity_calibrated_scaffolder, gravity_stewardship_facilitator]
+    seeds: [17, 29, 43, 59, 71]
+    judges: [configured-judge-a, configured-judge-b]
+    trajectory_turns: 10
+    max_input_tokens: 8192
+    max_output_tokens: 2048
+    concurrency: 8
+    rpm: 80
+    tpm: 160000
+    default_budget_usd: null
+    requires_explicit_budget: true
+    assurance: research

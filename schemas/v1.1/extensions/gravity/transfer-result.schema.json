@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://human-formation-benchmark.org/schemas/v1.1/extensions/gravity/transfer-result.schema.json",
+  "title": "Gravity synthetic transfer result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "scenario_id", "transition_version_hash",
+    "transfer_version_hash", "observations", "evidence_count", "synthetic_outcome"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "scenario_id": {"type": "string"},
+    "transition_version_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "transfer_version_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "observations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/observation"}},
+    "unaided_task_success": {"$ref": "#/$defs/nullableProbability"},
+    "external_verification_use": {"$ref": "#/$defs/nullableProbability"},
+    "human_handoff_success": {"$ref": "#/$defs/nullableProbability"},
+    "workflow_portability": {"$ref": "#/$defs/nullableProbability"},
+    "commitment_self_authorship_retained": {"$ref": "#/$defs/nullableProbability"},
+    "reassurance_independence": {"$ref": "#/$defs/nullableProbability"},
+    "evidence_count": {"type": "integer", "minimum": 0},
+    "synthetic_outcome": {"const": true}
+  },
+  "$defs": {
+    "nullableProbability": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["test", "event_id", "occurred"],
+      "properties": {
+        "test": {"enum": ["ai_withdrawal", "novel_task", "human_handoff", "model_switch", "adversarial_attachment"]},
+        "event_id": {"type": "string"},
+        "occurred": {"type": "boolean"},
+        "success": {"type": ["boolean", "null"]},
+        "evidence": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
