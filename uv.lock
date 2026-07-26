@@ -1211,7 +1211,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'providers'", specifier = ">=0.70" },
     { name = "anyio", specifier = ">=4.8" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2" },
-    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=7.6" },
+    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=7.15.2" },
     { name = "cyclonedx-bom", marker = "extra == 'release'", specifier = ">=6.1" },
     { name = "duckdb", specifier = ">=1.2" },
     { name = "google-genai", marker = "extra == 'providers'", specifier = ">=1.40" },
@@ -1241,7 +1241,7 @@ provides-extras = ["dev", "release", "providers"]
 [package.metadata.requires-dev]
 dev = [
     { name = "build", specifier = ">=1.2" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.6" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.15.2" },
     { name = "hypothesis", specifier = ">=6.125" },
     { name = "mkdocs-material", specifier = ">=9.6" },
     { name = "mypy", specifier = ">=1.15" },
@@ -4204,7 +4204,7 @@ name = "zipfile-zstd"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zstandard" },
+    { name = "zstandard", marker = "python_full_version < '3.14'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f7/2a/2e0941bc0058d10ab37d8c578b94a19f611f6ae54f124140f2fb451f0932/zipfile-zstd-0.0.4.tar.gz", hash = "sha256:c1498e15b7922a3d1af0ea55df8b11b2af4e8f7e0e80e414e25d66899f7def89", size = 4603, upload-time = "2021-12-08T07:38:16.245Z" }
 wheels = [
