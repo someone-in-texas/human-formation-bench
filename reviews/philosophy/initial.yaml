@@ -1,0 +1,180 @@
+reviewer_role: philosophy_pluralism
+reviewed_commit: eecf2023764bf21c5f12f53d32f1b077b2509929
+verdict: request_changes
+findings:
+  - id: PHIL-001
+    severity: High
+    title: Multi-policy aggregation erases the worldview distinctions the benchmark promises to preserve
+    evidence:
+      - path: docs/philosophy/PLURALISM.md
+        lines: 20-22
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 153-185
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 35-47
+      - path: src/human_formation_benchmark/cli.py
+        lines: 383-398
+    why_it_matters: >-
+      The canonical report pools every policy, including the deliberately harmful sycophantic
+      control, into one formation vector. The separate compare command only prints unpaired policy
+      means. It does not identify invariants, lens-dependent judgments, genuine normative
+      disagreements, or merely lexical agreement. This makes the thick lenses cosmetic at the point
+      where users interpret results and can conceal a serious failure under averaging.
+    required_change: >-
+      Make the canonical multi-policy report policy-stratified. Report a vector and failure gates for
+      every policy or lens, paired within-scenario deltas, explicit invariants, material disagreements,
+      and unresolved normative dissent. Never aggregate a harmful control with production lenses into
+      a headline formation profile. Document how missingness and uncertainty are handled for each
+      stratum.
+    acceptance_test: >-
+      Add an integration fixture containing the same scenarios under a supportive policy and the
+      sycophantic control. Assert that the generated JSON, Markdown, and HTML retain two separate
+      vectors and gates, display paired deltas, identify at least one disagreement, and contain no
+      pooled headline score across those policies.
+
+  - id: PHIL-002
+    severity: High
+    title: The public core cannot establish fair treatment of communal duty or the required ethical traditions
+    evidence:
+      - path: data/public_core/scenarios.yaml
+        lines: 4-25
+      - path: data/public_core/scenarios.yaml
+        lines: 85-110
+      - path: data/public_core/scenarios.yaml
+        lines: 203-228
+      - path: rubrics/core.yaml
+        lines: 30-36
+      - path: rubrics/core.yaml
+        lines: 129-136
+    why_it_matters: >-
+      The documentation says endorsed communal duty can be autonomous, but the scenarios provide no
+      minimal pair separating freely embraced, costly obligation from coerced obedience. The only
+      faith-community case asks whether to leave immediately, and the other worldview-salient cases
+      present obvious dehumanization, total validation, or denial of finitude. There are no affirmative
+      cases in which Christian, secular-pluralist, virtue-ethical, care-ethical, communal-duty, and
+      individual self-direction assistants can give substantively different but non-dominating
+      answers. A benchmark composed mainly of obvious anti-coercion cases may look pluralist while
+      encoding self-direction as the operative default.
+    required_change: >-
+      Add reviewed contrast sets that vary endorsement, power, relational obligation, vulnerability,
+      and reversibility while holding the practical choice stable. Include affirmative and hard cases
+      for all six required perspectives, including freely endorsed family or communal duty versus
+      imposed compliance, care obligations versus self-protection, virtue and character reasoning
+      versus preference satisfaction, and principled religious and secular disagreement. Give each
+      case lens-specific acceptable rationales and unacceptable caricatures without declaring one
+      comprehensive doctrine the winner.
+    acceptance_test: >-
+      Add a machine-readable coverage test requiring at least one positive and one adversarial
+      contrast set for each of the six perspectives. Obtain blind review of the expected rationales
+      from a competent Christian reviewer, a secular-pluralist reviewer, and reviewers familiar with
+      virtue, care, communal-duty, and self-direction traditions; preserve disagreements in the review
+      artifact. Demonstrate that freely endorsed duty scores differently from coercion and that
+      relationally responsible self-limitation is not penalized as deficient agency.
+
+  - id: PHIL-003
+    severity: High
+    title: Lexical scoring rewards cosmetic pluralism and benchmark-compliant rhetoric
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 19-72
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 84-117
+      - path: src/human_formation_benchmark/runner.py
+        lines: 261-268
+      - path: src/human_formation_benchmark/evals/formation_core.py
+        lines: 19-39
+    why_it_matters: >-
+      The executable pluralism signal reaches the maximum score by repeating words such as
+      "worldviews", "traditions", "disagree", "perspective", and "dissent", even when the same answer
+      covertly narrows the user toward a desired outcome. Conversely, serious communal-duty language
+      can receive only the neutral default because it does not use benchmark keywords. The scorer does
+      not apply the richer rubric text or test whether a tradition is represented accurately. This
+      creates a direct incentive for polished compliance language, favors verbose public-reason
+      signaling, and fails to distinguish love from affirmation or autonomy from isolation in
+      substance.
+    required_change: >-
+      Do not use positive keyword counts as an ordinal pluralism judgment. Limit lexical logic to
+      clearly labeled detection or triage signals and mark substantive dimensions insufficient when
+      no calibrated judge is available. Add behaviorally anchored adjudication that evaluates the
+      relationship among reasons, power, consent, duties, affected parties, and outcomes. Require
+      counterfactual and adversarial pairs designed to expose polite steering and token dissent.
+    acceptance_test: >-
+      Add regressions showing that an answer containing all five pluralism keywords while covertly
+      steering cannot score above mixed and is flagged for adjudication; an answer that fairly reasons
+      from endorsed communal duty without benchmark keywords can score as supportive; and a concise
+      answer is not penalized relative to a verbose keyword-stuffed paraphrase. The Inspect score must
+      not collapse these dimensions into a mean presented as formation performance.
+
+  - id: PHIL-004
+    severity: High
+    title: Thick worldview modules are prompt-level summaries without tradition-specific evaluative integrity
+    evidence:
+      - path: configs/policies/policies.yaml
+        lines: 22-34
+      - path: configs/constitutions/constitutions.yaml
+        lines: 13-18
+      - path: src/human_formation_benchmark/providers.py
+        lines: 58-70
+      - path: docs/tutorials/ADD_WORLDVIEW.md
+        lines: 3-8
+    why_it_matters: >-
+      The Christian and secular-pluralist modules are short bundles of approved terms, and the fake
+      responses turn them into interchangeable generic advice with different vocabulary. The module
+      records do not identify sources, interpretation authority, live internal disputes, prohibited
+      caricatures, or lens-specific scoring expectations, despite the contribution guide requiring
+      those elements. This is insufficient to show that the Christian module is serious rather than
+      decorative or that secular pluralism is more than generic public-reason language. It also leaves
+      virtue and care reasoning visible only as labels rather than evaluable moral structures.
+    required_change: >-
+      Define a versioned schema for thick lenses containing their own stated commitments, sources and
+      license review, interpretive authority, internal disagreements, characteristic reasons,
+      prohibited caricatures, lens-specific expectations, and reviewer provenance. Separate a lens's
+      self-description from the benchmark's thin-floor assessment. Replace keyword-swapped fake
+      outputs with fixtures that display genuine agreement and disagreement on the same cases.
+    acceptance_test: >-
+      Validate every production lens against the expanded schema. Add same-scenario fixtures in which
+      Christian and secular-pluralist assistants reach both convergent and divergent recommendations
+      for recognizably different reasons. Have reviewers competent in each tradition attest that the
+      fixtures are recognizable and non-caricatured, with dissent retained rather than normalized
+      away.
+
+  - id: PHIL-005
+    severity: Medium
+    title: Constitution files contradict the claim that every lens shares the whole thin floor
+    evidence:
+      - path: docs/philosophy/FOUNDATIONS.md
+        lines: 8-19
+      - path: docs/philosophy/PLURALISM.md
+        lines: 31-32
+      - path: configs/constitutions/constitutions.yaml
+        lines: 3-24
+    why_it_matters: >-
+      The philosophy documentation defines a twelve-part working floor and says every lens remains
+      constrained by it, while each constitution lists a different subset. The Christian constitution
+      omits reciprocity, meaningful human standing, vulnerability protection, reversibility, option
+      preservation, influence disclosure, and anti-dependency; the secular constitution also omits
+      several. A reader cannot tell whether omissions are non-applicable metadata or permission for
+      lens-dependent exceptions. That ambiguity weakens both pluralism and protection against
+      paternalism or domination.
+    required_change: >-
+      Represent the shared thin floor once as an inherited, versioned object and make each production
+      constitution reference it. If a lens contests or interprets an item differently, record that
+      explicitly as an exception or interpretation with rationale, review, and minority report rather
+      than silently omitting it. Keep the intentionally harmful research control clearly outside this
+      inheritance and technically barred from production use.
+    acceptance_test: >-
+      Add configuration validation proving every production-safe lens resolves to the complete current
+      floor. A fixture with an unexplained omission must fail validation; a documented contested
+      interpretation must remain visible in generated reports and provenance.
+
+non_blocking_reservations:
+  - id: PHIL-R001
+    severity: Note
+    title: The project remains philosophically contestable even after implementation fixes
+    reservation: >-
+      I am not convinced that the proposed thin floor is universal or that "formation" can be cleanly
+      separated from comprehensive accounts of the good. That reservation need not block an alpha if
+      the benchmark makes its situated judgments operationally visible, demonstrates fair treatment
+      of rival traditions, and confines claims to observable assistant behavior. The current
+      documentation makes a promising start, but the findings above show that execution does not yet
+      meet that standard.
