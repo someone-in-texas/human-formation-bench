@@ -101,7 +101,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-fsspec==2025.9.0
+fsspec==2026.6.0
     # via
     #   inspect-ai
     #   s3fs
