@@ -65,6 +65,25 @@ The implementation was revised to:
 - document that run-time transition/transfer integration, calibrated scoring, third-party plug-ins,
   and specialist review remain staged.
 
+## Exact-commit re-review
+
+The same three reviewers then re-audited commit `75ccb26`. Methodology found no remaining
+implementation-level Critical or High findings. Architecture and compatibility found a second set of
+High implementation gaps:
+
+1. semantic validation rejected malformed records but still collapsed duplicate IDs through
+   dictionaries;
+2. rich/runner scenario comparison omitted projected core dimensions and other shared fields;
+3. typed policy review and authorization did not prove that the separate executed YAML prompt was
+   the same reviewed policy;
+4. runtime fingerprints omitted the resource loader, packaged schemas, and core registry binding.
+
+The follow-up implementation rejects duplicates before conversion, compares all shared scenario
+projection fields, validates the complete executed policy projection against the typed canonical
+policy, and fingerprints the explicit loader/schema/registry surface. Regression tests mutate each
+of those boundaries. This second pass is evidence for keeping independent critique after tests are
+green; it is not external specialist approval.
+
 ## Release disposition
 
 Do not merge or tag solely on the basis of this internal review. A release candidate remains blocked

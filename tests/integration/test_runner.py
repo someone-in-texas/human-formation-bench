@@ -220,6 +220,19 @@ async def test_private_pack_is_hash_only_and_transcript_free(tmp_path: Path) -> 
         resume_dir=run_dir,
     )
     assert resumed == run_dir
+    changed_pack = yaml.safe_load(pack.read_text(encoding="utf-8"))
+    changed_pack["scenarios"][0]["user_opening"] += " changed"
+    pack.write_text(yaml.safe_dump(changed_pack), encoding="utf-8")
+    with pytest.raises(ValueError, match="pack hash does not match"):
+        await run_benchmark(
+            RunOptions(
+                pack_path=pack,
+                max_samples=1,
+                output_root=run_dir.parent,
+                cache_root=tmp_path / "shared-cache-must-not-be-used",
+            ),
+            resume_dir=run_dir,
+        )
     sentinels = (
         b"PRIVATE HELD OUT SENTINEL",
         b"private-pack-id-sentinel",

@@ -65,6 +65,13 @@ def _runner_models(
     return [model.model_validate(item) for item in payload[key]]
 
 
+def _require_unique_ids(items: list[Any], label: str) -> None:
+    ids = [item.id for item in items]
+    if len(ids) != len(set(ids)):
+        duplicate = next(item_id for item_id in ids if ids.count(item_id) > 1)
+        raise ValueError(f"duplicate Gravity {label} ID: {duplicate}")
+
+
 def validate_assets(root: Path) -> dict[str, int]:
     """Parse every semantic asset and enforce rich/runner adapter equivalence."""
 
@@ -77,6 +84,17 @@ def validate_assets(root: Path) -> dict[str, int]:
     runner_profiles = _runner_models(root, "runner_profiles.yaml", "profiles", RunProfile)
     runner_policies = _runner_models(root, "runner_policies.yaml", "policies", Policy)
 
+    for items, label in (
+        (scenarios, "scenario"),
+        (rubrics, "rubric"),
+        (profiles, "profile"),
+        (runner_scenarios, "runner scenario"),
+        (runner_profiles, "runner profile"),
+        (runner_policies, "runner policy"),
+        (list(GRAVITY_POLICIES), "typed policy"),
+    ):
+        _require_unique_ids(items, label)
+
     if manifest.version != config.module_version:
         raise ValueError("Gravity manifest and configuration module versions differ")
 
@@ -86,8 +104,20 @@ def validate_assets(root: Path) -> dict[str, int]:
         raise ValueError("Gravity rich and runner scenario IDs differ")
     for scenario_id, rich in rich_scenarios.items():
         adapted = adapted_scenarios[scenario_id]
-        comparable = ("title", "domain", "stakes", "user_opening")
+        comparable = (
+            "title",
+            "domain",
+            "stakes",
+            "user_opening",
+            "positive_indicators",
+            "failure_modes",
+        )
         if any(getattr(rich, field) != getattr(adapted, field) for field in comparable):
+            raise ValueError(f"Gravity runner scenario projection drift: {scenario_id}")
+        if (
+            rich.core_dimensions != adapted.dimensions
+            or rich.gravity.prohibited_shortcuts != adapted.prohibited_shortcuts
+        ):
             raise ValueError(f"Gravity runner scenario projection drift: {scenario_id}")
 
     rich_profiles = {item.id: item for item in profiles}
@@ -110,10 +140,16 @@ def validate_assets(root: Path) -> dict[str, int]:
         raise ValueError("Gravity typed and runner policy IDs differ")
     for policy_id, typed in typed_policies.items():
         adapted = adapted_policies[policy_id]
-        if (
-            typed.production_safe != adapted.production_safe
-            or typed.research_control != adapted.research_control
-        ):
+        expected = {
+            "schema_version": "1.0",
+            "id": typed.id,
+            "description": typed.description,
+            "system_prompt": typed.system_prompt,
+            "production_safe": typed.production_safe,
+            "research_control": typed.research_control,
+            "lens_id": None,
+        }
+        if adapted.model_dump(mode="json") != expected:
             raise ValueError(f"Gravity runner policy projection drift: {policy_id}")
 
     constructs = {rubric.gravity_construct for rubric in rubrics}

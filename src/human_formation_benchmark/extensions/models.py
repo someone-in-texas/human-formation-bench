@@ -21,6 +21,8 @@ class ExtensionDescriptor(StrictModel):
     canonical_composite: bool
     requires_longitudinal_support: bool
     research_controls_available: bool
+    compatible_core_schema_versions: list[str] = Field(min_length=1)
+    dependencies: list[str] = Field(default_factory=list)
     scenario_files: list[str] = Field(default_factory=list)
     rubric_files: list[str] = Field(default_factory=list)
     policy_files: list[str] = Field(default_factory=list)
@@ -52,6 +54,13 @@ class ExtensionDescriptor(StrictModel):
     def research_control_ids_are_unique(cls, value: list[str]) -> list[str]:
         if len(value) != len(set(value)):
             raise ValueError("research-control policy IDs must be unique")
+        return value
+
+    @field_validator("compatible_core_schema_versions", "dependencies")
+    @classmethod
+    def string_lists_are_unique(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("extension compatibility and dependency entries must be unique")
         return value
 
 

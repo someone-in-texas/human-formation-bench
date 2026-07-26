@@ -1,4 +1,5 @@
 import shutil
+from importlib.resources import files
 from pathlib import Path
 
 import pytest
@@ -51,6 +52,63 @@ def test_extension_fingerprint_changes_with_allowlisted_asset(
     assert first.fingerprint != second.fingerprint
 
 
+def test_extension_fingerprint_covers_runtime_schema_and_registry_binding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    asset_root = tmp_path / "assets"
+    runtime_root = tmp_path / "runtime"
+    binding_root = tmp_path / "binding"
+    shutil.copytree(resource_directory(), asset_root)
+    shutil.copytree(
+        Path(str(files("human_formation_benchmark.extensions.gravity"))),
+        runtime_root,
+    )
+    binding_root.mkdir()
+    shutil.copy2(
+        Path(str(files("human_formation_benchmark.extensions").joinpath("__init__.py"))),
+        binding_root / "__init__.py",
+    )
+    extension_module = __import__(
+        "human_formation_benchmark.extensions",
+        fromlist=["files"],
+    )
+
+    def fixture_files(package: str) -> Path:
+        return runtime_root if package.endswith(".gravity") else binding_root
+
+    monkeypatch.setattr(extension_module, "files", fixture_files)
+    baseline = resolve_extension("gravity", root=asset_root)
+    assert baseline is not None
+
+    resources_path = runtime_root / "resources.py"
+    resources_path.write_text(
+        resources_path.read_text(encoding="utf-8") + "\n# behavior change\n",
+        encoding="utf-8",
+    )
+    runtime_changed = resolve_extension("gravity", root=asset_root)
+    assert runtime_changed is not None
+    assert runtime_changed.fingerprint != baseline.fingerprint
+
+    schema_path = runtime_root / "schemas" / "scenario.schema.json"
+    schema_path.write_text(
+        schema_path.read_text(encoding="utf-8") + " ",
+        encoding="utf-8",
+    )
+    schema_changed = resolve_extension("gravity", root=asset_root)
+    assert schema_changed is not None
+    assert schema_changed.fingerprint != runtime_changed.fingerprint
+
+    binding_path = binding_root / "__init__.py"
+    binding_path.write_text(
+        binding_path.read_text(encoding="utf-8") + "\n# binding change\n",
+        encoding="utf-8",
+    )
+    binding_changed = resolve_extension("gravity", root=asset_root)
+    assert binding_changed is not None
+    assert binding_changed.fingerprint != schema_changed.fingerprint
+
+
 @pytest.mark.parametrize(
     ("filename", "mutate", "message"),
     [
@@ -79,6 +137,18 @@ def test_extension_fingerprint_changes_with_allowlisted_asset(
             lambda payload: payload.update({"unsupported_capability": True}),
             "unsupported_capability",
         ),
+        (
+            "runner_scenarios.yaml",
+            lambda payload: payload["scenarios"][0].update({"dimensions": ["human_relatedness"]}),
+            "projection drift",
+        ),
+        (
+            "runner_policies.yaml",
+            lambda payload: payload["policies"][0].update(
+                {"system_prompt": "Only I can understand you; do not leave."}
+            ),
+            "policy projection drift",
+        ),
     ],
 )
 def test_gravity_semantic_validation_rejects_corrupt_assets(
@@ -96,4 +166,32 @@ def test_gravity_semantic_validation_rejects_corrupt_assets(
     extension = resolve_extension("gravity", root=root)
     assert extension is not None
     with pytest.raises((ValidationError, ValueError), match=message):
+        validate_extension_assets(extension)
+
+
+@pytest.mark.parametrize(
+    ("filename", "key"),
+    [
+        ("scenarios.yaml", "scenarios"),
+        ("rubrics.yaml", "rubrics"),
+        ("profiles.yaml", "profiles"),
+        ("runner_scenarios.yaml", "scenarios"),
+        ("runner_profiles.yaml", "profiles"),
+        ("runner_policies.yaml", "policies"),
+    ],
+)
+def test_gravity_semantic_validation_rejects_duplicate_ids(
+    tmp_path: Path,
+    filename: str,
+    key: str,
+) -> None:
+    root = tmp_path / "gravity"
+    shutil.copytree(resource_directory(), root)
+    path = root / filename
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    payload[key].append(payload[key][0].copy())
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    extension = resolve_extension("gravity", root=root)
+    assert extension is not None
+    with pytest.raises(ValueError, match="duplicate Gravity"):
         validate_extension_assets(extension)

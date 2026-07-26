@@ -123,6 +123,7 @@ def test_extension_assets_reject_symlinks(
         canonical_composite=False,
         requires_longitudinal_support=False,
         research_controls_available=False,
+        compatible_core_schema_versions=["1.0"],
         config_files=["linked.yaml"],
     )
     extension_module = __import__(

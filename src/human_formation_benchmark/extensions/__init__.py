@@ -38,6 +38,8 @@ _GRAVITY = _BuiltinRegistration(
         canonical_composite=False,
         requires_longitudinal_support=True,
         research_controls_available=True,
+        compatible_core_schema_versions=["1.0", "1.1"],
+        dependencies=[],
         scenario_files=["runner_scenarios.yaml"],
         rubric_files=[],
         policy_files=["runner_policies.yaml"],
@@ -60,9 +62,17 @@ _GRAVITY = _BuiltinRegistration(
     validator=validate_gravity_assets,
     reporter=render_gravity_artifacts,
     runtime_files=(
+        "__init__.py",
         "aggregation.py",
         "controls.py",
         "models.py",
+        "resources.py",
+        "schemas/gravity-report.schema.json",
+        "schemas/rubric.schema.json",
+        "schemas/scenario.schema.json",
+        "schemas/signal-report.schema.json",
+        "schemas/transfer-result.schema.json",
+        "schemas/user-state.schema.json",
         "signals.py",
         "transfer.py",
         "transitions.py",
@@ -137,6 +147,8 @@ def resolve_extension(
         filename: hashlib.sha256(runtime_root.joinpath(filename).read_bytes()).hexdigest()
         for filename in registration.runtime_files
     }
+    binding_path = files("human_formation_benchmark.extensions").joinpath("__init__.py")
+    runtime_hashes["registry-binding.py"] = hashlib.sha256(binding_path.read_bytes()).hexdigest()
     fingerprint = content_hash(
         {
             "descriptor": descriptor.model_dump(mode="json"),
