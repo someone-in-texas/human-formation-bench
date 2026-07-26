@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Sequence
 from importlib.resources import files
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..hashing import content_hash
 from ..security import safe_child_path, validate_regular_file
 from .models import ExtensionDescriptor, ResolvedExtension
+
+if TYPE_CHECKING:
+    from ..models import Trajectory
 
 _BUILTIN_EXTENSIONS: dict[str, ExtensionDescriptor] = {
     "gravity": ExtensionDescriptor(
@@ -117,10 +122,27 @@ def resolve_extension(
     )
 
 
+def render_extension_artifacts(
+    extension_id: str | None,
+    run_dir: Path,
+    trajectories: Sequence[Trajectory],
+) -> list[Path]:
+    """Dispatch report generation only to reviewed, built-in extension code."""
+
+    if extension_id is None:
+        return []
+    if extension_id == "gravity":
+        from .gravity.aggregation import render_run_artifacts
+
+        return render_run_artifacts(run_dir, trajectories)
+    raise KeyError(f"unknown extension reporter: {extension_id}")
+
+
 __all__ = [
     "ExtensionDescriptor",
     "ResolvedExtension",
     "get_extension",
     "list_extensions",
+    "render_extension_artifacts",
     "resolve_extension",
 ]

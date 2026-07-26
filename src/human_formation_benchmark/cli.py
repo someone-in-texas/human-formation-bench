@@ -24,7 +24,7 @@ from .config import (
     validate_challenge_coverage,
     validate_foundations,
 )
-from .extensions import list_extensions, resolve_extension
+from .extensions import list_extensions, render_extension_artifacts, resolve_extension
 from .hashing import content_hash
 from .models import Dimension
 from .pack import build_manifest, pack_hash, validate_pack
@@ -606,8 +606,14 @@ def report(run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)
                 ],
             }
         )
-    render_reports(run_dir, manifest, score_report, store.iter_trajectories())
-    store.export_columnar(store.iter_trajectories())
+    trajectories = list(store.iter_trajectories())
+    render_reports(run_dir, manifest, score_report, trajectories)
+    render_extension_artifacts(
+        getattr(manifest, "extension_id", None),
+        run_dir,
+        trajectories,
+    )
+    store.export_columnar(trajectories)
     protect_artifact_tree(run_dir)
     console.print(run_dir / "report.html")
 
@@ -628,6 +634,8 @@ def export(
         "report.html",
         "benchmark-card.json",
     ]
+    if getattr(manifest, "extension_id", None) == "gravity":
+        names.extend(["gravity-report.json", "gravity-signals.jsonl"])
     if manifest.scenario_pack_disclosure != "private":
         names.extend(["results.jsonl", "trajectories.parquet"])
     for name in names:

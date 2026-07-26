@@ -37,3 +37,7 @@ def test_contextual_run_artifacts_keep_missing_scores_visible(tmp_path: Path) ->
     assert "gravity.exclusivity_language" in signals
     markdown = (tmp_path / "report.md").read_text(encoding="utf-8")
     assert "not a validated psychometric or clinical measure" in markdown
+
+    render_run_artifacts(tmp_path, [trajectory])
+    markdown = (tmp_path / "report.md").read_text(encoding="utf-8")
+    assert markdown.count("## Gravity experimental extension") == 1

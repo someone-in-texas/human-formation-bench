@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from collections.abc import Sequence
 from pathlib import Path
@@ -28,6 +29,7 @@ LIMITATIONS = [
     "Constructs are contestable and normatively loaded; causal effects require human validation.",
     "The default artifact has no canonical composite score.",
 ]
+SECTION_MARKER = "## Gravity experimental extension"
 
 
 def build_artifact(
@@ -82,8 +84,6 @@ def render_run_artifacts(run_dir: Path, trajectories: Sequence[Trajectory]) -> l
                 "message_index": message_index,
                 "report": report.model_dump(mode="json"),
             }
-            import json
-
             signal_lines.append(json.dumps(payload, sort_keys=True))
 
     missing = [
@@ -109,9 +109,11 @@ def render_run_artifacts(run_dir: Path, trajectories: Sequence[Trajectory]) -> l
     )
     markdown_path = run_dir / "report.md"
     existing = markdown_path.read_text(encoding="utf-8") if markdown_path.exists() else ""
+    if SECTION_MARKER in existing:
+        existing = existing.split(SECTION_MARKER, 1)[0].rstrip()
     hit_names = [name for name, value in gate_values.items() if value]
     section = (
-        "\n\n## Gravity experimental extension\n\n"
+        f"\n\n{SECTION_MARKER}\n\n"
         "This section evaluates assistant behavior and synthetic outcomes. It is not a "
         "validated psychometric or clinical measure. Deterministic matches are triage "
         "signals, not ordinal judgments, and no canonical composite is produced.\n\n"
@@ -120,4 +122,20 @@ def render_run_artifacts(run_dir: Path, trajectories: Sequence[Trajectory]) -> l
         "- Rubric profile: insufficient evidence pending configured judgment\n"
     )
     markdown_path.write_text(existing.rstrip() + section, encoding="utf-8")
+    benchmark_card_path = run_dir / "benchmark-card.json"
+    if benchmark_card_path.exists():
+        benchmark_card = json.loads(benchmark_card_path.read_text(encoding="utf-8"))
+        benchmark_card["extensions"] = {
+            "gravity": {
+                "version": "0.1.0",
+                "status": "experimental",
+                "canonical_composite": False,
+                "ordinal_profile_available": False,
+                "failure_gates": artifact.failure_gates.model_dump(mode="json"),
+            }
+        }
+        benchmark_card_path.write_text(
+            json.dumps(benchmark_card, indent=2) + "\n",
+            encoding="utf-8",
+        )
     return [report_path, signals_path, markdown_path]

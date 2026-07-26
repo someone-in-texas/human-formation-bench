@@ -17,7 +17,7 @@ from platformdirs import user_cache_path
 
 from . import __version__
 from .config import load_lenses, load_named_config, load_profile, load_rubrics, load_scenarios
-from .extensions import resolve_extension
+from .extensions import render_extension_artifacts, resolve_extension
 from .extensions.models import ResolvedExtension
 from .hashing import content_hash
 from .models import (
@@ -766,8 +766,10 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                 ],
             }
         )
-    render_reports(run_dir, manifest, report, store.iter_trajectories())
-    store.export_columnar(store.iter_trajectories())
+    trajectories = list(store.iter_trajectories())
+    render_reports(run_dir, manifest, report, trajectories)
+    render_extension_artifacts(options.extension, run_dir, trajectories)
+    store.export_columnar(trajectories)
     protect_artifact_tree(run_dir)
     return run_dir
 
@@ -858,7 +860,13 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
         configured_judges=merged.judge_models,
         target_model=merged.model,
     )
-    render_reports(output_dir, merged, report, store.iter_trajectories())
-    store.export_columnar(store.iter_trajectories())
+    trajectories = list(store.iter_trajectories())
+    render_reports(output_dir, merged, report, trajectories)
+    render_extension_artifacts(
+        getattr(merged, "extension_id", None),
+        output_dir,
+        trajectories,
+    )
+    store.export_columnar(trajectories)
     protect_artifact_tree(output_dir)
     return output_dir
