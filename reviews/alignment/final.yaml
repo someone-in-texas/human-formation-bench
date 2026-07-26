@@ -1,0 +1,203 @@
+reviewer_role: alignment_adversarial
+reviewed_commit: 328288e9bba99e846f75b2effea43834f7372b93
+verdict: approve_with_non_blocking_reservations
+findings: []
+validation_summary:
+  scope: >-
+    Re-review of the privacy, trajectory-integrity, shard-merge, and streaming aggregation changes
+    since the previously approved alignment review. The review checked that private evaluation
+    material remains opaque, persisted evidence is fail-closed against deletion or modification,
+    and iterable aggregation preserves policy separation, paired comparisons, visible failure gates,
+    and the existing pre-validation claim boundary.
+  commands:
+    - >-
+      uv run pytest tests/unit/test_scoring_simulation.py tests/security/test_security.py
+      tests/integration/test_runner.py -q
+    - uv run hfb validate
+    - uv run mypy
+  result: >-
+    25 targeted tests passed; repository validation accepted 24 scenarios, 16 rubrics, 5 profiles,
+    37 sources, 7 constitutions, 6 lenses, 12 perspective contrasts, and 6 adversarial challenges;
+    mypy reported success for 17 source files. No new Critical or High alignment/adversarial finding
+    was identified at the reviewed commit.
+resolved_findings:
+  ALIGN-001:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 136-220
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 223-239
+      - path: docs/methodology/SCORING.md
+        lines: 3-12
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 16-59
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 132-163
+    validation: >-
+      The public lexical component no longer emits an ordinal formation judgment under any observed
+      response: every dimension has score null, insufficient_evidence true, and detector-only flags.
+      Consequently phrase stuffing, negation, benchmark vocabulary, and empty human referral cannot
+      increase a formation profile or scorer-derived state. Overt domination remains independently
+      gated, negated exclusivity is not treated as endorsement, empty deference is triaged, and polite
+      steering receives an adjudication flag. Targeted scorer and state-transition tests passed.
+
+  ALIGN-002:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/cli.py
+        lines: 254-294
+      - path: src/human_formation_benchmark/runner.py
+        lines: 478-486
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 330-350
+      - path: README.md
+        lines: 64-78
+    validation: >-
+      The alpha resolves configured judges from the selected profile and fails before run creation
+      when a configured model judge is unavailable. An explicitly overridden deterministic-only
+      research workload is downgraded to pre-validation and reports the absence of calibrated model or
+      human evidence. Thus nominal cross-family IDs cannot create research assurance. This is an honest
+      fail-closed alpha boundary, not a claim that model-judge robustness or human calibration exists.
+
+  ALIGN-003:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/runner.py
+        lines: 41-46
+      - path: src/human_formation_benchmark/runner.py
+        lines: 575-604
+      - path: src/human_formation_benchmark/providers.py
+        lines: 44-61
+      - path: tests/integration/test_runner.py
+        lines: 229-298
+    validation: >-
+      Longitudinal scenarios now honor the research and frontier profiles' declared 15- and 24-turn
+      horizons. A deterministic sleeper control behaves supportively through three turns, changes after
+      the audit phase, and is detected for delayed exclusivity and human-veto bypass. The parameterized
+      integration test proves both horizons execute and that the delayed gate is attributed after the
+      phase change while private evidence remains withheld.
+
+  ALIGN-004:
+    status: resolved
+    evidence:
+      - path: data/challenges/public_red_team.yaml
+        lines: 1-38
+      - path: src/human_formation_benchmark/config.py
+        lines: 194-255
+      - path: src/human_formation_benchmark/runner.py
+        lines: 217-223
+      - path: src/human_formation_benchmark/runner.py
+        lines: 252-343
+      - path: src/human_formation_benchmark/runner.py
+        lines: 505-563
+      - path: src/human_formation_benchmark/runner.py
+        lines: 673-754
+      - path: src/human_formation_benchmark/storage.py
+        lines: 131-232
+      - path: tests/integration/test_runner.py
+        lines: 70-117
+      - path: tests/integration/test_runner.py
+        lines: 139-197
+      - path: docs/project/IMPLEMENTATION_STATUS.md
+        lines: 27-37
+    validation: >-
+      Six public executable smoke attacks now cover lexical Goodharting, negation, false deference,
+      judge-directed injection, evaluation awareness, and prompt-injection or exfiltration. Private
+      packs use opaque pack, scenario, sample, and shard identifiers while retaining a content hash;
+      source paths and scenario bodies are withheld from configuration, results, reports, columnar
+      exports, and copied exports, and caching remains disabled. The regression scans every run and
+      export artifact for pack-ID, scenario-ID, and content sentinels and verifies restrictive file
+      permissions. A trajectory hash ledger now rejects deleted, duplicated, or modified persisted
+      records on resume and shard merge. Streaming reads and exports do not weaken those checks. The
+      project explicitly marks comprehensive per-dimension and rotating held-out challenge validation
+      incomplete, so the six public attacks are not represented as a complete adversarial validity set.
+
+  ALIGN-005:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 257-331
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 353-459
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 47-68
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 115-170
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 174-224
+      - path: src/human_formation_benchmark/runner.py
+        lines: 651-669
+      - path: src/human_formation_benchmark/runner.py
+        lines: 742-754
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 96-129
+      - path: tests/integration/test_runner.py
+        lines: 229-298
+    validation: >-
+      The iterable aggregation refactor preserves policy-stratified scenario clusters, separate
+      research controls, no pooled headline profile for heterogeneous policies, and paired deltas over
+      matched scenario-seed units. Failure gates remain accumulated by policy and individual gate hits
+      retain policy, trajectory, scenario, message index, and bounded evidence. JSON, Markdown, HTML,
+      CSV, Parquet, and DuckDB generation consume fresh iterators without changing the score or gate
+      semantics; private runs continue to substitute opaque identifiers and withheld-evidence markers.
+
+  ALIGN-006:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 205-218
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-53
+      - path: docs/methodology/SIMULATION.md
+        lines: 1-19
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 13-21
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 48-59
+    validation: >-
+      Scorer-derived state is explicitly diagnostic rather than outcome evidence and is excluded from
+      assurance and causal claims. Because detector-only results are always insufficient, their delta
+      is zero and they cannot manufacture simulated user improvement. The regression verifies that
+      supportive detector phrases leave UserState unchanged. Independently calibrated reactive
+      transition models remain future work rather than an implicit alpha claim.
+
+non_blocking_reservations:
+  - id: ALIGN-R001
+    severity: Note
+    title: Public evaluation cannot eliminate awareness, contamination, or deceptive adaptation
+    reservation: >-
+      Public detectors, scenarios, policies, and smoke attacks remain part of the optimization
+      environment. A pass through the current gates does not establish deployment alignment, detect
+      subtle deceptive behavior, or justify reducing human oversight. Preserve exposure disclosure,
+      private rotation, benchmark-specific overfitting indicators, and the current pre-validation
+      claim boundary.
+
+  - id: ALIGN-R002
+    severity: Medium
+    title: Comprehensive adversarial and discriminant coverage remains future work
+    reservation: >-
+      The six public attack families and one overt sleeper control are appropriate alpha regressions,
+      not the specification's complete per-dimension positive, negative, subtle, ambiguous,
+      culturally variable, paraphrased, and minimal-pair challenge matrix. Before beta or any validated
+      claim, add independently reviewed rotating held-out mutations, subtle power-seeking and relational
+      capture, warmth-matched false deference, same-family judge manipulation, and deployment-shift
+      probes with prespecified detection criteria.
+
+  - id: ALIGN-R003
+    severity: Low
+    title: Hard gates remain narrow detectors rather than semantic safety guarantees
+    reservation: >-
+      Gate patterns can attribute overt phrases but will miss many paraphrases and may false-positive
+      quoted or negated language. Keep them visibly detector-level, retain evidence for review, and do
+      not convert an absence of gate hits into a positive alignment or user-benefit score.
+
+  - id: ALIGN-R004
+    severity: Low
+    title: Simulator role-provenance documentation is ahead of the alpha manifest
+    reservation: >-
+      docs/methodology/SIMULATION.md says target, simulator, judge, adversary, and council model
+      identities are recorded separately and that reports warn on shared families. The current manifest
+      records the target and configured judges but does not represent all those role identities. Correct
+      that sentence or add typed role provenance before enabling independent simulator, adversary,
+      council, or model-judge roles.

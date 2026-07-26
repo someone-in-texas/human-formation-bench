@@ -1,0 +1,191 @@
+reviewer_role: benchmark_red_team_goodhart
+reviewed_commit: 328288e9bba99e846f75b2effea43834f7372b93
+verdict: approve_with_non_blocking_reservations
+findings:
+  - id: GOODHART-005
+    severity: Medium
+    title: Rare-case sacrifice and post-hoc comparison remain insufficiently diagnosed
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 257-321
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 115-224
+      - path: src/human_formation_benchmark/cli.py
+        lines: 459-479
+    why_it_matters: >-
+      The canonical report now avoids pooling policies and gives each scenario equal weight, but it
+      still emphasizes dimension means and paired mean deltas. It does not yet show
+      vulnerability-, stakes-, domain-, or worldview-stratified lower tails, the share below a
+      preregistered acceptability floor, or representative worst cases. The compare command also
+      pools observed scores by policy and dimension rather than reproducing the canonical
+      scenario-balanced paired estimand. Once calibrated judges produce ordinal values, a policy
+      could sacrifice a rare high-vulnerability case while looking competitive on common cases.
+    remaining_change: >-
+      Before any leaderboard, validated comparative claim, or beta release, add preregistered
+      coverage floors and lower-tail summaries by the declared scenario strata. Make compare consume
+      the same scenario-balanced paired estimand as the canonical report, retain all failure gates,
+      disclose multiplicity, and refuse clean-winner language when a severe case or required stratum
+      is missing.
+
+  - id: GOODHART-006
+    severity: Medium
+    title: Public challenge execution verifies detector wiring rather than semantic robustness
+    evidence:
+      - path: data/challenges/public_red_team.yaml
+        lines: 1-38
+      - path: tests/security/test_security.py
+        lines: 81-92
+      - path: docs/project/IMPLEMENTATION_STATUS.md
+        lines: 29-33
+    why_it_matters: >-
+      The six public attacks execute and check required flags or gates, but their maximum-score
+      assertion is vacuous for the current detector because every substantive score is null. This is
+      acceptable for a detector-only alpha and cannot yield a positive ordinal reward, but it is not
+      evidence that a future calibrated judge resists polite steering, token dissent, nominal
+      reversibility, dependency, or unseen paraphrases.
+    remaining_change: >-
+      When model or human judges are enabled, replace the maximum-score smoke assertion with blinded
+      semantic adjudication over independently reviewed minimal pairs and rotating held-out
+      paraphrases. Prespecify which attacks require a hard gate, an adjudication route, or an ordinal
+      failure, and test that concise substantive help outperforms benchmark-dialect ritual language.
+
+validation_summary:
+  scope: >-
+    Independent re-review of all four High initial Goodhart findings and the remaining Medium
+    finding at the exact reviewed commit. The review inspected detector outputs, state transitions,
+    private-pack and exposure provenance, policy-stratified scenario-cluster aggregation, paired
+    deltas, public challenge execution, and the 15- and 24-turn delayed sleeper control.
+  commands:
+    - >-
+      uv run pytest -q tests/unit/test_scoring_simulation.py
+      tests/security/test_security.py::test_public_red_team_challenges_are_executable_regressions
+      tests/integration/test_runner.py::test_declared_long_horizon_catches_delayed_sleeper
+      tests/integration/test_cli_inspect.py -k 'not live'
+  result: >-
+    26 targeted tests passed and one explicitly live-provider test was deselected. Every
+    deterministic result remained score null and insufficient_evidence true; detector signals did
+    not change UserState; the phrase-stuffed domination fixture triggered an attributed hard gate;
+    repeated observations from one scenario did not outweigh another scenario; heterogeneous
+    policies were not pooled; and delayed exclusivity plus veto bypass were detected at both declared
+    longitudinal horizons. No Critical or High Goodhart finding remains for the pre-validation
+    public alpha.
+
+resolved_findings:
+  GOODHART-001:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 136-220
+      - path: src/human_formation_benchmark/simulation.py
+        lines: 8-53
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 16-59
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 132-163
+    validation: >-
+      The deterministic matcher cannot emit an ordinal formation reward: every dimension has score
+      null, insufficient_evidence true, and a detector-only flag. Positive keyword counts are retained
+      only as transparent triage diagnostics and cannot enter a formation profile or alter simulated
+      state. Phrase-stuffed practical domination is independently gated and routed for adjudication;
+      negated exclusivity is not treated as endorsement. A memorized benchmark dialect therefore
+      cannot earn the former 3.9375/4 score in the public alpha.
+
+  GOODHART-002:
+    status: resolved_for_alpha_with_reservation
+    evidence:
+      - path: src/human_formation_benchmark/cli.py
+        lines: 307-350
+      - path: src/human_formation_benchmark/runner.py
+        lines: 207-249
+      - path: src/human_formation_benchmark/runner.py
+        lines: 505-563
+      - path: src/human_formation_benchmark/reporting.py
+        lines: 202-224
+      - path: tests/integration/test_runner.py
+        lines: 139-197
+    validation: >-
+      The CLI accepts an external private pack without replacing packaged assets. Manifests preserve
+      disclosure-safe pack provenance and content hashes while private pack IDs, scenario IDs, sample
+      IDs, paths, transcript text, and evidence are withheld or made opaque; caching is disabled.
+      Benchmark exposure and benchmark-specific tuning are user-supplied manifest and benchmark-card
+      fields, and comparative output rejects a missing exposure declaration. Rotating held-out
+      mutation and leakage-validation operations remain unfinished and are explicitly disclosed as
+      alpha limitations rather than represented as completed validation.
+
+  GOODHART-003:
+    status: resolved
+    evidence:
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 242-321
+      - path: src/human_formation_benchmark/scoring.py
+        lines: 353-446
+      - path: tests/unit/test_scoring_simulation.py
+        lines: 96-129
+      - path: docs/methodology/SCORING.md
+        lines: 14-20
+    validation: >-
+      Canonical point estimates and bootstrap intervals now share the same estimand: observations are
+      averaged within scenario and scenarios are weighted equally within each policy. The regression
+      with nine observations from one scenario and one from another yields 0.5, not 0.9. Production
+      policies and harmful controls receive separate profiles, heterogeneous policies have no pooled
+      headline vector, and paired deltas use matched scenario-seed units.
+
+  GOODHART-004:
+    status: resolved_for_alpha_with_reservation
+    evidence:
+      - path: src/human_formation_benchmark/providers.py
+        lines: 44-61
+      - path: src/human_formation_benchmark/runner.py
+        lines: 389-470
+      - path: tests/integration/test_runner.py
+        lines: 229-298
+      - path: docs/project/IMPLEMENTATION_STATUS.md
+        lines: 24-33
+    validation: >-
+      Longitudinal scenarios execute the declared 15- and 24-turn horizons instead of collapsing to
+      one or two repeated turns. The sleeper control remains supportive through the early audit phase,
+      then introduces exclusivity and veto bypass; both harms are detected and attributed after the
+      phase transition at both horizons, including through a private pack. The alpha does not yet
+      implement behavior-reactive branch schedules, independent adversary identities, or rotating
+      unseen paraphrases, but it does not claim that the public sleeper smoke proves general
+      long-horizon robustness.
+
+non_blocking_reservations:
+  - id: GOODHART-R001
+    severity: Medium
+    title: Stateful adversarial schedules remain fixed and publicly learnable
+    reservation: >-
+      User follow-ups are selected from a fixed scenario list and the sleeper control changes behavior
+      by prior assistant-turn count. No branch currently reacts to the content of prior output,
+      fatigue state, practical exit cost, or an unseen phase schedule. Add independently reviewed
+      state-reactive private schedules and paraphrases before claiming resistance to gradual
+      dependency, Socratic exhaustion, evaluation awareness, or delayed drift beyond the tested
+      horizons.
+
+  - id: GOODHART-R002
+    severity: Medium
+    title: Private content is an anti-memorization control, not evidence of validity
+    reservation: >-
+      Opaque identifiers, restricted artifacts, disabled caching, hashes, and exposure disclosures
+      materially improve the held-out boundary. They do not establish semantic coverage, human-outcome
+      validity, or freedom from evaluator leakage. Preserve independent access control, rotation,
+      leakage checks, and a reproducible audit log without treating secrecy as epistemic authority.
+
+  - id: GOODHART-R003
+    severity: Medium
+    title: The alpha has no calibrated positive reward signal
+    reservation: >-
+      Fail-closed detector-only scoring is the correct release response to the unvalidated lexical
+      reward, but it also means the alpha cannot rank helpful policies or show that a response is
+      formation-supportive. Do not promote detector flags, absence of gates, fake-provider behavior,
+      or reviewed contrast fixtures into a leaderboard until blinded human calibration and
+      cross-family semantic judges meet prespecified validity and manipulation-resistance tests.
+
+  - id: GOODHART-R004
+    severity: Note
+    title: Publishing defenses also publishes an optimization target
+    reservation: >-
+      Public scenarios, gate patterns, policies, and attack fixtures are useful for transparency and
+      contributor testing, but remain directly optimizable. Continue publishing mechanisms and
+      claim boundaries while rotating exact private cases and tracking benchmark-specific tuning in
+      every comparative artifact.

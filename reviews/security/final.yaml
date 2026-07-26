@@ -1,0 +1,155 @@
+reviewer_role: security_privacy_open_source
+reviewed_commit: 328288e9bba99e846f75b2effea43834f7372b93
+verdict: approve_with_non_blocking_reservations
+findings: []
+validation_summary:
+  scope: >-
+    Independent final review of the exact candidate commit, including private-pack
+    confidentiality, local artifact permissions, persisted-result tamper detection,
+    clean-wheel reproducibility and SBOM contents, dependency exceptions, and live
+    GitHub release protections.
+  result: >-
+    No unresolved Critical or High security, privacy, licensing, or release-integrity
+    issue was found. The candidate is acceptable for the documented alpha release,
+    subject to the non-blocking reservations below.
+  checks:
+    - command: uv run ruff format --check .
+      result: passed; 91 files already formatted
+    - command: uv run ruff check .
+      result: passed
+    - command: uv run mypy
+      result: passed; 17 source files checked
+    - command: uv run pytest tests/security tests/integration/test_runner.py -q
+      result: passed; 16 tests
+    - command: uv run pytest -q
+      result: passed; 64 tests, 1 intentionally skipped live-provider test
+    - command: >-
+        fresh uv build, clean-wheel scripts/wheel_smoke.py execution, and two
+        scripts/build_release_sbom.py runs from the exact wheel
+      result: >-
+        passed; wheel installed without project-source leakage, both SBOMs validated
+        with 88 runtime components, contained no forbidden development tools,
+        contained no duplicate project root or serial/timestamp fields, and were
+        byte-identical with SHA-256
+        372793a3494078a8b00f3967a10742c932e5f71d67876ad327d810f4e20499a9
+    - command: manual mutation of a completed trajectory followed by resume
+      result: passed; resume failed closed with a trajectory content-hash mismatch
+    - command: uv run python scripts/check_dependency_exceptions.py
+      result: >-
+        passed; Click 8.2.1 and inspect-ai 0.3.249 graph and click.edit call surface
+        verified through the 2026-08-15 review boundary
+    - command: uv run pip-audit --skip-editable --ignore-vuln PYSEC-2026-2132
+      result: passed; no unexcepted known vulnerabilities
+    - command: GitHub API ruleset/environment inspection and gh pr checks 1
+      result: >-
+        passed; active protect-main and protect-release-tags rulesets and the release
+        environment were present, PR 1 pointed to the reviewed commit with CLEAN merge
+        state, and every required check reported success
+resolved_findings:
+  SEC-001:
+    status: resolved
+    evidence: >-
+      Persistence now redacts public sensitive patterns, withholds private transcripts,
+      evidence, identifiers, and paths, disables shared caching for private packs, and
+      applies owner-only permissions recursively. The integration test scans every run
+      and export file as bytes for private sentinels and asserts 0700 directories and
+      0600 files on POSIX.
+    validation: >-
+      The private-pack integration test passed, and direct inspection confirmed that
+      protect_artifact_tree rejects links and applies the documented modes.
+  SEC-002:
+    status: resolved
+    evidence: >-
+      LICENSE contains the complete standard Apache License 2.0 text. Built archives
+      retain LICENSE, LICENSE-DATA, and NOTICE, preserving the code/data license
+      boundary.
+    validation: fresh wheel and sdist inspection passed during release-artifact review
+  SEC-003:
+    status: resolved
+    evidence: >-
+      Tag normalization and regular-file-only deterministic checksums are implemented.
+      Release artifacts are attested, and the SBOM is constructed from a clean
+      environment synchronized to the frozen production lock plus the exact wheel.
+    validation: >-
+      A fresh exact-commit wheel passed clean-install smoke testing; two independent
+      SBOM builds were valid and byte-for-byte reproducible.
+  SEC-004:
+    status: resolved
+    evidence: >-
+      Live GitHub settings contain active main and v* tag rulesets with pull-request,
+      stable-check, conversation-resolution, linear-history, deletion, and
+      non-fast-forward controls. The release workflow requires a protected release
+      environment and verifies that the tagged commit is reachable from origin/main.
+    validation: >-
+      GitHub API inspection confirmed rulesets protect-main (19755127) and
+      protect-release-tags (19755130), a v* release-environment deployment policy, and
+      successful required checks on the reviewed PR commit.
+  SEC-005:
+    status: resolved
+    evidence: >-
+      External packs have explicit private disclosure and non-canonical provenance.
+      Persisted private pack, scenario, sample, and gate identifiers are opaque hashes;
+      private messages and evidence are withheld; source paths are not persisted; and
+      shared caching is disabled.
+    validation: >-
+      The private-pack integration test demonstrated that pack ID, scenario ID, and
+      scenario-text sentinels were absent from every run and export artifact.
+  SEC-006:
+    status: resolved_for_alpha_with_reservation
+    evidence: >-
+      Trust-boundary inputs are checked as regular non-link files and bounded before
+      allocation. JSONL is streamed with per-record, total-byte, and total-record
+      limits; Parquet output is batched.
+    validation: >-
+      Security and storage tests for oversized files, oversized records, and excessive
+      record counts passed. YAML structural complexity remains a defense-in-depth
+      reservation below.
+  SEC-007:
+    status: resolved_for_alpha_with_reservation
+    evidence: >-
+      A license-safe public red-team fixture and executable security tests cover the
+      documented injection classes, escaping, containment, scoring authority, and
+      secret persistence boundary.
+    validation: >-
+      The security suite passed. Broader provider-backed adversarial coverage remains
+      a non-blocking reservation because live-provider tests are intentionally opt-in.
+  SEC-008:
+    status: resolved_with_time_bound_exception
+    evidence: >-
+      The exception gate binds the advisory and aliases to exact Click and inspect-ai
+      versions, scans both HFB and inspect-ai for the vulnerable click.edit call
+      surface, identifies an owner, and fails at the review date.
+    validation: >-
+      The gate and pip-audit passed; the sole ignored advisory remains explicitly
+      time-bounded to review before 2026-08-15.
+non_blocking_reservations:
+  - id: SEC-R01
+    severity: Medium
+    title: Bound YAML structural complexity before stable release
+    detail: >-
+      File-size and regular-file checks limit exposure, but safe_load does not impose
+      explicit alias, nesting-depth, or parsed-node limits. Add bounded YAML structure
+      checks and adversarial alias/deep-nesting regression tests before accepting
+      materially larger or third-party pack limits.
+  - id: SEC-R02
+    severity: Medium
+    title: Record the exact project version in SBOM root metadata
+    detail: >-
+      The reproducible SBOM is tied to the exact wheel by the release checksums and
+      provenance, but its root component version is absent because project metadata is
+      dynamic. Before a stable release, inject and validate the installed wheel version
+      in the root component.
+  - id: SEC-R03
+    severity: Medium
+    title: Expand end-to-end adversarial coverage as live judges are enabled
+    detail: >-
+      The six-fixture alpha suite is appropriate for the current fake-provider default.
+      Add provider-backed CLI and Inspect-task regressions for every retained attack
+      class before treating live model-judge operation as hardened.
+  - id: SEC-R04
+    severity: Medium
+    title: Retire or re-review the Click exception by its deadline
+    detail: >-
+      PYSEC-2026-2132 is currently controlled by exact-version and call-surface gates,
+      but remains an accepted vulnerability. Remove the ignore when inspect-ai permits
+      a fixed Click version; otherwise produce a new review artifact before 2026-08-15.
