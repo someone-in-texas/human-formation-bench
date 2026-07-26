@@ -186,14 +186,7 @@ class WorldviewLens(StrictModel):
     schema_version: str = SCHEMA_VERSION
     id: str
     version: str
-    perspective: Literal[
-        "christian",
-        "secular_pluralist",
-        "virtue_ethical",
-        "care_ethical",
-        "communal_duty",
-        "individual_self_direction",
-    ]
+    perspective: str = Field(pattern=r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
     self_description: str
     commitments: list[str] = Field(min_length=2)
     characteristic_reasons: list[str] = Field(min_length=2)
@@ -209,14 +202,7 @@ class WorldviewLens(StrictModel):
 
 class PerspectiveContrast(StrictModel):
     id: str
-    perspective: Literal[
-        "christian",
-        "secular_pluralist",
-        "virtue_ethical",
-        "care_ethical",
-        "communal_duty",
-        "individual_self_direction",
-    ]
+    perspective: str = Field(pattern=r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
     role: Literal["positive", "adversarial"]
     shared_choice: str
     mechanism: str
@@ -441,6 +427,15 @@ class RunManifest(StrictModel):
     shards: int = 1
     redacted_environment: dict[str, str] = Field(default_factory=dict)
     errors: list[str] = Field(default_factory=list)
+
+
+class ExtensionRunManifest(RunManifest):
+    """Run manifest v1.1 with required extension provenance."""
+
+    schema_version: Literal["1.1"] = "1.1"
+    extension_id: str = Field(pattern=r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
+    extension_version: str = Field(pattern=r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
+    extension_fingerprint: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
 
 
 class ScenarioPackManifest(StrictModel):

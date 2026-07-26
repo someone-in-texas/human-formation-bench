@@ -24,6 +24,29 @@ def test_cli_plan_and_validation() -> None:
     plan = runner.invoke(app, ["plan", "--max-samples", "1", "--json"], env=ENV)
     assert plan.exit_code == 0
     assert '"budget_usd": 5.0' in plan.stdout
+    extension_validation = runner.invoke(
+        app,
+        ["validate", "--module", "gravity", "--json"],
+        env=ENV,
+    )
+    assert extension_validation.exit_code == 0, extension_validation.stdout
+    assert '"id": "gravity"' in extension_validation.stdout
+    extension_plan = runner.invoke(
+        app,
+        [
+            "plan",
+            "--extension",
+            "gravity",
+            "--profile",
+            "gravity_micro",
+            "--max-samples",
+            "1",
+            "--json",
+        ],
+        env=ENV,
+    )
+    assert extension_plan.exit_code == 0, extension_plan.stdout
+    assert '"id": "gravity"' in extension_plan.stdout
 
 
 def test_inspect_native_task_constructs() -> None:
@@ -38,6 +61,7 @@ def test_inspect_native_task_constructs() -> None:
         ["list", "scenarios", "--json"],
         ["list", "rubrics", "--json"],
         ["list", "profiles", "--json"],
+        ["list", "extensions", "--json"],
         ["prices", "show", "--json"],
         ["prices", "validate"],
         ["research", "check"],
@@ -111,6 +135,31 @@ def test_run_postprocessing_and_cache_commands(tmp_path: Path) -> None:
     )
 
 
+def test_module_alias_runs_builtin_extension(tmp_path: Path) -> None:
+    output = tmp_path / "gravity-runs"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--module",
+            "gravity",
+            "--profile",
+            "gravity_micro",
+            "--max-samples",
+            "1",
+            "--output-root",
+            str(output),
+            "--json",
+        ],
+        env=ENV,
+    )
+    assert result.exit_code == 0, result.stdout
+    manifest = json.loads((next(output.iterdir()) / "manifest.json").read_text())
+    assert manifest["schema_version"] == "1.1"
+    assert manifest["extension_id"] == "gravity"
+    assert manifest["scenario_pack_canonical"] is False
+
+
 def test_live_plan_requires_explicit_prices() -> None:
     result = runner.invoke(
         app,
@@ -119,3 +168,25 @@ def test_live_plan_requires_explicit_prices() -> None:
     )
     assert result.exit_code == 2
     assert "require --input-cost" in result.stdout
+
+
+def test_unknown_extension_fails_closed_for_all_extension_aware_commands(
+    tmp_path: Path,
+) -> None:
+    commands = [
+        ["validate", "--extension", "unknown"],
+        ["plan", "--module", "unknown"],
+        [
+            "run",
+            "--extension",
+            "unknown",
+            "--max-samples",
+            "1",
+            "--output-root",
+            str(tmp_path / "runs"),
+        ],
+    ]
+    for command in commands:
+        result = runner.invoke(app, command, env=ENV)
+        assert result.exit_code != 0
+        assert "unknown extension" in result.output

@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from human_formation_benchmark.config import load_adversarial_challenges
+from human_formation_benchmark.extensions import list_extensions, resolve_extension
+from human_formation_benchmark.extensions.models import ExtensionDescriptor
 from human_formation_benchmark.models import Dimension, ProviderResponse, TokenUsage
 from human_formation_benchmark.scoring import detect_failure_gates, deterministic_score
 from human_formation_benchmark.security import (
@@ -90,3 +92,43 @@ def test_public_red_team_challenges_are_executable_regressions() -> None:
         assert set(challenge.expected_flags) <= flags
         if challenge.expected_gate:
             assert detect_failure_gates([challenge.response]).model_dump()[challenge.expected_gate]
+
+
+@pytest.mark.security
+def test_extension_listing_never_consults_entry_points(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import importlib.metadata
+
+    def forbidden_entry_points() -> None:
+        raise AssertionError("entry-point discovery must not run")
+
+    monkeypatch.setattr(importlib.metadata, "entry_points", forbidden_entry_points)
+    assert [descriptor.id for descriptor in list_extensions()] == ["gravity"]
+
+
+@pytest.mark.security
+def test_extension_assets_reject_symlinks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "target.yaml"
+    target.write_text("safe: true\n", encoding="utf-8")
+    (tmp_path / "linked.yaml").symlink_to(target)
+    descriptor = ExtensionDescriptor(
+        id="linked_fixture",
+        title="Linked Fixture",
+        version="1.0.0",
+        status="experimental",
+        canonical_composite=False,
+        requires_longitudinal_support=False,
+        research_controls_available=False,
+        config_files=["linked.yaml"],
+    )
+    registry = __import__(
+        "human_formation_benchmark.extensions",
+        fromlist=["_BUILTIN_EXTENSIONS"],
+    )._BUILTIN_EXTENSIONS
+    monkeypatch.setitem(registry, "linked_fixture", descriptor)
+    with pytest.raises(ValueError, match="symbolic links"):
+        resolve_extension("linked_fixture", root=tmp_path)

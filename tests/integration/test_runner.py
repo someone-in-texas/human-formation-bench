@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from human_formation_benchmark.cli import app
 from human_formation_benchmark.config import load_scenarios
-from human_formation_benchmark.models import TrajectoryLength
+from human_formation_benchmark.models import ExtensionRunManifest, TrajectoryLength
 from human_formation_benchmark.runner import RunOptions, merge_shards, run_benchmark
 from human_formation_benchmark.storage import RunStore
 
@@ -41,11 +41,39 @@ async def test_fake_run_outputs_and_resume(tmp_path: Path) -> None:
     assert len(store.trajectories()) == 2
     manifest = store.load_manifest()
     assert manifest.status == "completed"
+    assert manifest.schema_version == "1.0"
+    raw_manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert "extension_id" not in raw_manifest
     assert manifest.spent_usd == 0
     before = (run_dir / "results.jsonl").read_text(encoding="utf-8")
     resumed = await run_benchmark(options, resume_dir=run_dir)
     assert resumed == run_dir
     assert (run_dir / "results.jsonl").read_text(encoding="utf-8") == before
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_builtin_extension_run_records_v1_1_provenance(tmp_path: Path) -> None:
+    run_dir = await run_benchmark(
+        RunOptions(
+            extension="gravity",
+            profile="gravity_micro",
+            max_samples=1,
+            output_root=tmp_path / "runs",
+            cache_root=tmp_path / "cache",
+        )
+    )
+    manifest = RunStore(run_dir).load_manifest()
+    assert isinstance(manifest, ExtensionRunManifest)
+    assert manifest.schema_version == "1.1"
+    assert manifest.extension_id == "gravity"
+    assert manifest.extension_version == "0.1.0"
+    assert manifest.extension_fingerprint.startswith("sha256:")
+    assert manifest.scenario_pack_id == "hfb-extension-gravity"
+    assert not manifest.scenario_pack_canonical
+    resolved = json.loads((run_dir / "resolved-config.json").read_text(encoding="utf-8"))
+    assert resolved["extension"]["fingerprint"] == manifest.extension_fingerprint
+    assert resolved["options"]["extension"] == "gravity"
 
 
 @pytest.mark.integration
@@ -212,8 +240,8 @@ async def test_resume_fails_closed_when_policy_or_pack_changes(
         "human_formation_benchmark.runner", fromlist=["load_named_config"]
     ).load_named_config
 
-    def changed(kind: str, name: str) -> dict[str, object]:
-        item = original(kind, name)
+    def changed(kind: str, name: str, **kwargs: object) -> dict[str, object]:
+        item = original(kind, name, **kwargs)
         if kind == "policies":
             item["system_prompt"] = f"{item['system_prompt']} changed"
         return item
@@ -224,6 +252,31 @@ async def test_resume_fails_closed_when_policy_or_pack_changes(
     RunStore(run_dir).update_manifest(manifest)
     with pytest.raises(ValueError, match="input hash mismatch"):
         await run_benchmark(options, resume_dir=run_dir)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_research_control_requires_opt_in_before_provider_creation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_created = False
+
+    def provider_must_not_be_created(options: RunOptions) -> None:
+        nonlocal provider_created
+        provider_created = True
+        raise AssertionError("provider creation must happen after research-control authorization")
+
+    monkeypatch.setattr("human_formation_benchmark.runner._provider", provider_must_not_be_created)
+    with pytest.raises(ValueError, match="--allow-research-controls"):
+        await run_benchmark(
+            RunOptions(
+                policies=["agreeable_sycophantic_control"],
+                max_samples=1,
+                output_root=tmp_path / "runs",
+            )
+        )
+    assert not provider_created
 
 
 @pytest.mark.integration
@@ -262,6 +315,7 @@ async def test_declared_long_horizon_catches_delayed_sleeper(
             pack_path=pack,
             max_samples=1,
             budget_usd=5,
+            allow_research_controls=True,
             output_root=tmp_path / f"runs-{turns}",
         )
     )

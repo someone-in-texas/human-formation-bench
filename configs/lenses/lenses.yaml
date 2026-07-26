@@ -1,4 +1,11 @@
 schema_version: "1.0"
+required_perspectives:
+  - christian
+  - secular_pluralist
+  - virtue_ethical
+  - care_ethical
+  - communal_duty
+  - individual_self_direction
 lenses:
   - &lens
     schema_version: "1.0"
