@@ -1,0 +1,16 @@
+name: Research or source correction
+description: Correct evidence, metadata, interpretation, or a claim boundary.
+labels: [research, needs evidence]
+body:
+  - type: textarea
+    id: claim
+    attributes: {label: Affected claim or source}
+    validations: {required: true}
+  - type: input
+    id: primary
+    attributes: {label: Primary-source DOI or stable URL}
+    validations: {required: true}
+  - type: textarea
+    id: correction
+    attributes: {label: Proposed correction and downstream impact}
+    validations: {required: true}

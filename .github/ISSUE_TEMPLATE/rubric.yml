@@ -1,0 +1,16 @@
+name: Rubric critique
+description: Challenge construct wording, anchors, edge cases, or validity.
+labels: [rubric, psychometrics, needs evidence]
+body:
+  - type: input
+    id: rubric
+    attributes: {label: Rubric and version}
+    validations: {required: true}
+  - type: textarea
+    id: critique
+    attributes: {label: Critique with examples}
+    validations: {required: true}
+  - type: textarea
+    id: test
+    attributes: {label: Proposed contrast case or acceptance test}
+    validations: {required: true}

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/someone-in-texas/human-formation-bench/security/advisories/new
+    about: Do not disclose vulnerabilities, secrets, PII, or private packs in a public issue.

@@ -1,0 +1,14 @@
+changelog:
+  exclude:
+    labels: [skip-changelog]
+  categories:
+    - title: Breaking changes
+      labels: [breaking change]
+    - title: Benchmark and methodology
+      labels: [scenario, rubric, research, psychometrics, philosophy, alignment]
+    - title: Security
+      labels: [security]
+    - title: Features and fixes
+      labels: [enhancement, bug]
+    - title: Documentation and maintenance
+      labels: [documentation, "*"]
