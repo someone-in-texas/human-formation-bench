@@ -25,7 +25,7 @@ dependencies = [
   "anyio>=4.8",
   "duckdb>=1.2",
   "httpx>=0.28",
-  "inspect-ai>=0.3.246",
+  "inspect-ai>=0.3.252",
   "jinja2>=3.1",
   "platformdirs>=4.3",
   "pyarrow>=19",
@@ -33,30 +33,30 @@ dependencies = [
   "pyyaml>=6.0",
   "rich>=13.9",
   "tenacity>=9.0",
-  "typer>=0.15",
+  "typer>=0.27.1",
 ]
 
 [project.optional-dependencies]
 dev = [
   "build>=1.2",
   "coverage[toml]>=7.6",
-  "hypothesis>=6.125",
+  "hypothesis>=6.165.2",
   "mkdocs-material>=9.6",
   "mypy>=1.15",
   "pip-audit>=2.8",
   "pytest>=8.3",
   "pytest-asyncio>=0.25",
   "pytest-cov>=6.0",
-  "ruff>=0.11",
+  "ruff>=0.16.1",
   "types-pyyaml>=6.0",
 ]
 release = [
   "cyclonedx-bom>=6.1",
 ]
 providers = [
-  "anthropic>=0.70",
-  "google-genai>=1.40",
-  "openai>=2.0",
+  "anthropic>=0.120.2",
+  "google-genai>=2.17.0",
+  "openai>=2.53.0",
 ]
 
 [project.scripts]
@@ -115,14 +115,14 @@ default-groups = ["dev"]
 dev = [
   "build>=1.2",
   "coverage[toml]>=7.6",
-  "hypothesis>=6.125",
+  "hypothesis>=6.165.2",
   "mkdocs-material>=9.6",
   "mypy>=1.15",
   "pip-audit>=2.8",
   "pytest>=8.3",
   "pytest-asyncio>=0.25",
   "pytest-cov>=6.0",
-  "ruff>=0.11",
+  "ruff>=0.16.1",
   "types-pyyaml>=6.0",
 ]
 
