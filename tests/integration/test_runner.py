@@ -51,6 +51,16 @@ async def test_fake_run_outputs_and_resume(tmp_path: Path) -> None:
     assert (run_dir / "results.jsonl").read_text(encoding="utf-8") == before
 
 
+def test_git_provenance_is_independent_of_caller_working_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from human_formation_benchmark.runner import _git_commit
+
+    expected = _git_commit()
+    monkeypatch.chdir(tmp_path)
+    assert _git_commit() == expected
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_builtin_extension_run_records_v1_1_provenance(tmp_path: Path) -> None:

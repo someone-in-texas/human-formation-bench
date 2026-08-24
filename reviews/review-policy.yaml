@@ -24,6 +24,7 @@ blocking_severities:
   - High
 external_verification:
   required: false
+  triggered: []
   required_marker: external
   reenable_triggers:
     - beta_or_stable_release

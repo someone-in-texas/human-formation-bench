@@ -45,6 +45,7 @@ synthetic, experimental vertical slice.
 ## Consequences
 
 Alpha development can merge without unavailable experts, but its assurance ceiling stays explicit.
-The external-review framework remains fail-closed and can be re-enabled with a one-field policy change
-plus qualifying review artifacts. Automated safety, vector scoring, visible failure gates, rubric
+The external-review framework remains fail-closed and can be re-enabled with a synchronized lifecycle
+stage and requirement change plus qualifying review artifacts. Beta and release-candidate tags are
+also rejected automatically while the internal-alpha waiver is active. Automated safety, vector scoring, visible failure gates, rubric
 review requirements, and human-subject protections are unchanged.

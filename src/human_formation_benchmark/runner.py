@@ -78,11 +78,13 @@ class RunOptions:
 
 def _git_commit() -> str:
     git = shutil.which("git")
-    if git is None:
+    source_root = Path(__file__).resolve().parents[2]
+    if git is None or not (source_root / ".git").exists():
         return "unknown"
     try:
         return subprocess.run(  # noqa: S603 - fixed git invocation, no untrusted arguments
             [git, "rev-parse", "HEAD"],
+            cwd=source_root,
             check=True,
             capture_output=True,
             text=True,

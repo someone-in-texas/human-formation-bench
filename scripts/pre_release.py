@@ -14,7 +14,16 @@ from typing import Any
 
 import yaml
 
-PRERELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+-(?:alpha|beta|rc)\.\d+$")
+PRERELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+-(?P<lifecycle>alpha|beta|rc)\.\d+$")
+REENABLE_TRIGGERS = {
+    "beta_or_stable_release",
+    "calibrated_or_ordinal_scoring",
+    "comparative_or_construct_validity_claims",
+    "human_subject_research",
+    "large_public_pack_expansion",
+    "second_active_maintainer_and_review_panel",
+}
+INTERNAL_REVIEW_SCOPES = {"technical", "governance", "release"}
 
 
 def run(command: list[str], *, cwd: Path) -> None:
@@ -49,6 +58,22 @@ def load_review_policy(root: Path) -> dict[str, Any]:
             f"review policy stage must be {expected_stage} when external verification "
             f"required is {external['required']}"
         )
+    triggers = external.get("reenable_triggers")
+    if not isinstance(triggers, list) or not all(isinstance(item, str) for item in triggers):
+        raise SystemExit("review policy reenable_triggers must be a string list")
+    missing_triggers = REENABLE_TRIGGERS - set(triggers)
+    if missing_triggers:
+        raise SystemExit(f"review policy is missing re-enable triggers: {sorted(missing_triggers)}")
+    triggered = external.get("triggered")
+    if not isinstance(triggered, list) or not all(isinstance(item, str) for item in triggered):
+        raise SystemExit("review policy external_verification.triggered must be a string list")
+    unknown_triggered = set(triggered) - set(triggers)
+    if unknown_triggered:
+        raise SystemExit(
+            f"review policy has unknown triggered conditions: {sorted(unknown_triggered)}"
+        )
+    if triggered and not external["required"]:
+        raise SystemExit("triggered external-review conditions require external verification")
     review_by = payload.get("review_by")
     if isinstance(review_by, date):
         review_date = review_by
@@ -130,6 +155,19 @@ def verify_reviews(root: Path, *, allowed_commits: set[str] | None = None) -> No
                 blockers.append(f"{path}: external verification marker missing")
             if payload.get("reviewed_commit") not in allowed_commits:
                 blockers.append(f"{path}: review is not bound to the release candidate")
+            required_provenance = {
+                "reviewer_identity": str,
+                "affiliation": str,
+                "expertise": list,
+                "conflicts": list,
+                "independence_statement": str,
+            }
+            for field, expected_type in required_provenance.items():
+                value = payload.get(field)
+                if not isinstance(value, expected_type) or not value:
+                    blockers.append(f"{path}: external reviewer provenance missing {field}")
+                elif expected_type is list and not all(isinstance(item, str) for item in value):
+                    blockers.append(f"{path}: external reviewer provenance invalid {field}")
     missing = required_roles - roles
     if missing:
         blockers.append(f"missing final reviewer roles: {sorted(missing)}")
@@ -138,14 +176,58 @@ def verify_reviews(root: Path, *, allowed_commits: set[str] | None = None) -> No
 
 
 def verify_release_metadata(root: Path, tag: str) -> None:
-    if not PRERELEASE_TAG.fullmatch(tag):
+    match = PRERELEASE_TAG.fullmatch(tag)
+    if not match:
         raise SystemExit("tag must be a semantic prerelease such as v0.2.0-alpha.1")
+    policy = load_review_policy(root)
+    if match.group("lifecycle") != "alpha" and not policy["external_verification"]["required"]:
+        raise SystemExit("beta and rc tags require external verification")
     version = tag.removeprefix("v")
     if f"## [{version}]" not in (root / "CHANGELOG.md").read_text(encoding="utf-8"):
         raise SystemExit(f"CHANGELOG.md does not contain a {version} release heading")
     citation = yaml.safe_load((root / "CITATION.cff").read_text(encoding="utf-8"))
     if not isinstance(citation, dict) or citation.get("version") != version:
         raise SystemExit(f"CITATION.cff version must equal {version}")
+
+
+def verify_release_candidate_review(root: Path, tag: str) -> None:
+    path = root / "reviews" / "release-candidate.yaml"
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+        raise SystemExit("reviews/release-candidate.yaml must use schema_version 1")
+    policy = load_review_policy(root)
+    blockers = []
+    if payload.get("release_tag") != tag:
+        blockers.append(f"release_tag must equal {tag}")
+    if payload.get("stage") != policy["stage"]:
+        blockers.append(f"stage must equal {policy['stage']}")
+    reviewed_commit = payload.get("reviewed_commit")
+    if reviewed_commit not in permitted_review_commits(root):
+        blockers.append("reviewed_commit is not bound to the release candidate")
+    if payload.get("verdict") not in _string_set(policy, "approved_verdicts"):
+        blockers.append(f"verdict {payload.get('verdict')}")
+    scopes = payload.get("scopes")
+    if (
+        not isinstance(scopes, list)
+        or not all(isinstance(scope, str) for scope in scopes)
+        or not INTERNAL_REVIEW_SCOPES <= set(scopes)
+    ):
+        blockers.append(f"scopes must include {sorted(INTERNAL_REVIEW_SCOPES)}")
+    findings = payload.get("findings")
+    if not isinstance(findings, list):
+        blockers.append("findings must be a list")
+        findings = []
+    blocking_severities = _string_set(policy, "blocking_severities")
+    for finding in findings:
+        if not isinstance(finding, dict):
+            blockers.append("finding must be a mapping")
+        elif finding.get("severity") in blocking_severities:
+            blockers.append(f"unresolved {finding.get('id', 'unknown')} {finding.get('severity')}")
+    summary = (root / "reviews" / "REVIEW_SUMMARY.md").read_text(encoding="utf-8")
+    if tag not in summary or not isinstance(reviewed_commit, str) or reviewed_commit not in summary:
+        blockers.append("REVIEW_SUMMARY.md must name the release tag and reviewed commit")
+    if blockers:
+        raise SystemExit("release-candidate review gate failed:\n- " + "\n- ".join(blockers))
 
 
 def main() -> None:
@@ -169,8 +251,7 @@ def main() -> None:
         raise SystemExit("working tree must be clean")
     verify_release_metadata(root, args.tag)
     verify_reviews(root)
-    if not (root / "reviews/REVIEW_SUMMARY.md").is_file():
-        raise SystemExit("reviews/REVIEW_SUMMARY.md is required")
+    verify_release_candidate_review(root, args.tag)
     if not args.skip_checks:
         for command in [
             [uv, "sync", "--all-groups", "--extra", "release", "--frozen"],
