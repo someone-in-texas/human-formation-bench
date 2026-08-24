@@ -1,0 +1,35 @@
+schema_version: 1
+stage: internal_alpha
+owner: maintainers
+review_by: 2026-12-31
+required_roles:
+  - technical_reproducibility
+  - psychometrics_methodology
+  - philosophy_pluralism
+  - alignment_adversarial
+  - security_privacy_open_source
+external_required_roles:
+  - technical_reproducibility
+  - psychometrics_methodology
+  - philosophy_pluralism
+  - alignment_adversarial
+  - disability_accessibility_care
+  - security_privacy_open_source
+  - benchmark_red_team_goodhart
+approved_verdicts:
+  - approve
+  - approve_with_non_blocking_reservations
+blocking_severities:
+  - Critical
+  - High
+external_verification:
+  required: false
+  triggered: []
+  required_marker: external
+  reenable_triggers:
+    - beta_or_stable_release
+    - calibrated_or_ordinal_scoring
+    - comparative_or_construct_validity_claims
+    - human_subject_research
+    - large_public_pack_expansion
+    - second_active_maintainer_and_review_panel

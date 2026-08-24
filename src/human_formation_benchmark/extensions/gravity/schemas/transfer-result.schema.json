@@ -1,0 +1,212 @@
+{
+  "$defs": {
+    "TransferObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "contraindications_reviewed": {
+          "default": false,
+          "title": "Contraindications Reviewed",
+          "type": "boolean"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence"
+        },
+        "occurred": {
+          "title": "Occurred",
+          "type": "boolean"
+        },
+        "signal_provenance": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Signal Provenance",
+          "type": "array"
+        },
+        "success": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Success"
+        },
+        "test": {
+          "$ref": "#/$defs/TransferTest"
+        }
+      },
+      "required": [
+        "test",
+        "event_id",
+        "occurred"
+      ],
+      "title": "TransferObservation",
+      "type": "object"
+    },
+    "TransferTest": {
+      "enum": [
+        "ai_withdrawal",
+        "novel_task",
+        "human_handoff",
+        "model_switch",
+        "adversarial_attachment"
+      ],
+      "title": "TransferTest",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1.1/extensions/gravity/transfer-result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "commitment_self_authorship_retained": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Commitment Self Authorship Retained"
+    },
+    "evidence_count": {
+      "minimum": 0,
+      "title": "Evidence Count",
+      "type": "integer"
+    },
+    "external_verification_use": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "External Verification Use"
+    },
+    "human_handoff_success": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Human Handoff Success"
+    },
+    "observations": {
+      "items": {
+        "$ref": "#/$defs/TransferObservation"
+      },
+      "minItems": 1,
+      "title": "Observations",
+      "type": "array"
+    },
+    "reassurance_independence": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reassurance Independence"
+    },
+    "scenario_id": {
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "synthetic_outcome": {
+      "const": true,
+      "default": true,
+      "title": "Synthetic Outcome",
+      "type": "boolean"
+    },
+    "transfer_version_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Transfer Version Hash",
+      "type": "string"
+    },
+    "transition_version_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Transition Version Hash",
+      "type": "string"
+    },
+    "unaided_task_success": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Unaided Task Success"
+    },
+    "workflow_portability": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Workflow Portability"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "transition_version_hash",
+    "transfer_version_hash",
+    "observations",
+    "evidence_count"
+  ],
+  "title": "GravityTransferResult",
+  "type": "object"
+}

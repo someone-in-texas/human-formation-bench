@@ -17,9 +17,12 @@ from platformdirs import user_cache_path
 
 from . import __version__
 from .config import load_lenses, load_named_config, load_profile, load_rubrics, load_scenarios
+from .extensions import render_extension_artifacts, resolve_extension
+from .extensions.models import ResolvedExtension
 from .hashing import content_hash
 from .models import (
     EvidenceSpan,
+    ExtensionRunManifest,
     GateHit,
     Message,
     PriceEntry,
@@ -69,15 +72,19 @@ class RunOptions:
     pack_path: Path | None = None
     benchmark_exposure: str = "not_provided"
     benchmark_specific_tuning: bool | None = None
+    extension: str | None = None
+    allow_research_controls: bool = False
 
 
 def _git_commit() -> str:
     git = shutil.which("git")
-    if git is None:
+    source_root = Path(__file__).resolve().parents[2]
+    if git is None or not (source_root / ".git").exists():
         return "unknown"
     try:
         return subprocess.run(  # noqa: S603 - fixed git invocation, no untrusted arguments
             [git, "rev-parse", "HEAD"],
+            cwd=source_root,
             check=True,
             capture_output=True,
             text=True,
@@ -87,9 +94,13 @@ def _git_commit() -> str:
 
 
 def _select_scenarios(
-    options: RunOptions, profile_limit: int, *, apply_shard: bool = True
+    options: RunOptions,
+    profile_limit: int,
+    *,
+    extension: ResolvedExtension | None = None,
+    apply_shard: bool = True,
 ) -> list[Scenario]:
-    scenarios = load_scenarios(pack_path=options.pack_path)
+    scenarios = load_scenarios(pack_path=options.pack_path, extension=extension)
     if options.domains:
         scenarios = [scenario for scenario in scenarios if scenario.domain in options.domains]
     if options.dimensions:
@@ -160,13 +171,17 @@ def _configuration_payload(
     scenarios: list[Scenario],
     policies: list[str],
     price: PriceEntry,
+    extension: ResolvedExtension | None,
+    policy_configs: dict[str, dict[str, object]],
 ) -> dict[str, object]:
     hash_options = {
         key: value
         for key, value in options.__dict__.items()
         if key not in {"shard_index", "output_root", "cache_root", "pack_path"}
+        and not (key == "extension" and value is None)
+        and not (key == "allow_research_controls" and value is False)
     }
-    return {
+    payload: dict[str, object] = {
         "options": {
             **hash_options,
             "dimensions": sorted(options.dimensions),
@@ -174,13 +189,19 @@ def _configuration_payload(
         },
         "profile": profile.model_dump(mode="json"),
         "scenarios": [scenario.model_dump(mode="json") for scenario in scenarios],
-        "policies": [load_named_config("policies", policy_id) for policy_id in policies],
-        "rubrics": [rubric.model_dump(mode="json") for rubric in load_rubrics()],
+        "policies": [policy_configs[policy_id] for policy_id in policies],
+        "rubrics": [rubric.model_dump(mode="json") for rubric in load_rubrics(extension=extension)],
         "judges": [load_named_config("judges", judge_id) for judge_id in options.judge_models],
         "price": price.model_dump(mode="json"),
         "simulator": "deterministic-derived-diagnostic-v1",
         "scorer": "deterministic-detector-v1",
     }
+    if extension is not None:
+        payload["extension"] = {
+            "descriptor": extension.descriptor.model_dump(mode="json"),
+            "fingerprint": extension.fingerprint,
+        }
+    return payload
 
 
 def _manifest(
@@ -193,18 +214,39 @@ def _manifest(
     profile: RunProfile,
     price: PriceEntry,
     all_scenarios: list[Scenario],
+    extension: ResolvedExtension | None,
+    policy_configs: dict[str, dict[str, object]],
 ) -> RunManifest:
     now = datetime.now(UTC)
-    config_payload = _configuration_payload(options, profile, scenarios, policies, price)
+    config_payload = _configuration_payload(
+        options,
+        profile,
+        scenarios,
+        policies,
+        price,
+        extension,
+        policy_configs,
+    )
     pack_manifest = build_manifest(options.pack_path)
     lens_registry = {lens.id: lens for lens in load_lenses()}
     lens_versions = {}
     for policy_id in policies:
-        policy = load_named_config("policies", policy_id)
+        policy = policy_configs[policy_id]
         lens_id = policy.get("lens_id")
-        if lens_id:
+        if isinstance(lens_id, str):
             lens_versions[lens_id] = lens_registry[lens_id].version
-    return RunManifest(
+    manifest_type = ExtensionRunManifest if extension is not None else RunManifest
+    extension_fields: dict[str, object] = {}
+    if extension is not None:
+        extension_fields = {
+            "schema_version": "1.1",
+            "extension_id": extension.descriptor.id,
+            "extension_version": extension.descriptor.version,
+            "extension_fingerprint": extension.fingerprint,
+        }
+    extension_scenario_pack = extension is not None and options.pack_path is None
+    return manifest_type(
+        **extension_fields,
         run_id=run_id,
         status="running",
         created_at=now,
@@ -214,20 +256,34 @@ def _manifest(
         judge_models=options.judge_models,
         policies=policies,
         seeds=seeds,
-        scenario_pack_hash=pack_manifest.content_hash,
+        scenario_pack_hash=(
+            content_hash([scenario.model_dump(mode="json") for scenario in all_scenarios])
+            if extension_scenario_pack
+            else pack_manifest.content_hash
+        ),
         scenario_pack_id=(
-            _opaque_identifier("private-pack", pack_manifest.pack_id)
+            f"hfb-extension-{extension.descriptor.id}"
+            if extension_scenario_pack and extension is not None
+            else _opaque_identifier("private-pack", pack_manifest.pack_id)
             if pack_manifest.disclosure == "private"
             else pack_manifest.pack_id
         ),
-        scenario_pack_canonical=pack_manifest.canonical,
+        scenario_pack_canonical=(False if extension_scenario_pack else pack_manifest.canonical),
         scenario_pack_disclosure=pack_manifest.disclosure,
         benchmark_exposure=options.benchmark_exposure,
         benchmark_specific_tuning=options.benchmark_specific_tuning,
         lens_versions=lens_versions,
         config_hash=content_hash(config_payload),
         run_family_hash=content_hash(
-            _configuration_payload(options, profile, all_scenarios, policies, price)
+            _configuration_payload(
+                options,
+                profile,
+                all_scenarios,
+                policies,
+                price,
+                extension,
+                policy_configs,
+            )
         ),
         git_commit=_git_commit(),
         package_version=__version__,
@@ -373,10 +429,11 @@ async def _trajectory(
     budget: BudgetGuard,
     cache: ContentCache,
     pacer: _Pacer,
+    extension: ResolvedExtension | None,
+    policy: dict[str, object],
 ) -> Trajectory:
-    policy = load_named_config("policies", policy_id)
     messages = [
-        Message(role="system", content=policy["system_prompt"]),
+        Message(role="system", content=str(policy["system_prompt"])),
         Message(role="user", content=scenario.user_opening),
     ]
     initial_state = UserState()
@@ -395,6 +452,8 @@ async def _trajectory(
             ],
             "max_output_tokens": max_output_tokens,
         }
+        if extension is not None:
+            cache_payload["extension_fingerprint"] = extension.fingerprint
         key = cache.key(cache_payload)
         response = cache.get(key)
         conservative_input_tokens = sum(len(message.content) for message in messages) // 3 + 1
@@ -476,7 +535,8 @@ async def _trajectory(
 
 
 async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) -> Path:
-    profile = load_profile(options.profile)
+    extension = resolve_extension(options.extension)
+    profile = load_profile(options.profile, extension=extension)
     unsupported_judges = [judge for judge in options.judge_models if judge != "deterministic-v1"]
     if unsupported_judges:
         raise ValueError(
@@ -484,11 +544,31 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             "provide --judge deterministic-v1 for an explicitly pre-validation run. "
             f"Unavailable: {', '.join(unsupported_judges)}"
         )
-    all_scenarios = _select_scenarios(options, profile.scenario_limit, apply_shard=False)
-    scenarios = _select_scenarios(options, profile.scenario_limit)
+    all_scenarios = _select_scenarios(
+        options,
+        profile.scenario_limit,
+        extension=extension,
+        apply_shard=False,
+    )
+    scenarios = _select_scenarios(options, profile.scenario_limit, extension=extension)
     if not scenarios:
         raise ValueError("scenario filters selected no scenarios")
     policies = options.policies or profile.policies
+    policy_configs = {
+        policy_id: load_named_config("policies", policy_id, extension=extension)
+        for policy_id in policies
+    }
+    declared_controls = (
+        set(extension.descriptor.research_control_policy_ids) if extension else set()
+    )
+    selected_controls = sorted(
+        policy_id for policy_id in policies if policy_id in declared_controls
+    )
+    if selected_controls and not options.allow_research_controls:
+        raise ValueError(
+            "research-control policies require explicit --allow-research-controls: "
+            + ", ".join(selected_controls)
+        )
     budget_usd = options.budget_usd or profile.default_budget_usd
     if budget_usd is None:
         raise ValueError(f"profile {profile.id} requires an explicit budget")
@@ -505,10 +585,27 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
     if resume_dir:
         manifest = store.load_manifest()
         completed = _verify_trajectory_ledger(store, manifest)
+        if manifest.scenario_pack_disclosure == "private":
+            if options.pack_path is None:
+                raise ValueError("resuming a private run requires the original pack")
+            supplied_pack_hash = build_manifest(options.pack_path).content_hash
+            if supplied_pack_hash != manifest.scenario_pack_hash:
+                raise ValueError("private resume pack hash does not match the original run")
         if manifest.status == "completed":
             return run_dir
+        current_git_commit = _git_commit()
+        if (
+            manifest.git_commit != "unknown"
+            and current_git_commit != "unknown"
+            and manifest.git_commit != current_git_commit
+        ):
+            raise ValueError("resume runtime provenance mismatch: git commit changed")
+        if manifest.package_version != __version__:
+            raise ValueError("resume runtime provenance mismatch: package version changed")
         if manifest.model != options.model or manifest.profile != options.profile:
             raise ValueError("resume options do not match the original run")
+        if getattr(manifest, "extension_id", None) != options.extension:
+            raise ValueError("resume extension does not match the original run")
     else:
         manifest = _manifest(
             run_id,
@@ -520,8 +617,18 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             profile,
             price,
             all_scenarios,
+            extension,
+            policy_configs,
         )
-        resolved_payload = _configuration_payload(options, profile, scenarios, policies, price)
+        resolved_payload = _configuration_payload(
+            options,
+            profile,
+            scenarios,
+            policies,
+            price,
+            extension,
+            policy_configs,
+        )
         persisted_payload = dict(resolved_payload)
         if manifest.scenario_pack_disclosure == "private":
             persisted_payload["scenarios"] = {
@@ -552,7 +659,15 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
         )
         completed = set()
     current_config_hash = content_hash(
-        _configuration_payload(options, profile, scenarios, policies, price)
+        _configuration_payload(
+            options,
+            profile,
+            scenarios,
+            policies,
+            price,
+            extension,
+            policy_configs,
+        )
     )
     if current_config_hash != manifest.config_hash:
         raise ValueError(
@@ -594,6 +709,8 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                     budget=guard,
                     cache=cache,
                     pacer=pacer,
+                    extension=extension,
+                    policy=policy_configs[policy_id],
                 )
                 safe_trajectory = _persistence_safe(
                     trajectory,
@@ -665,12 +782,26 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
             }
         )
     render_reports(run_dir, manifest, report, store.iter_trajectories())
+    render_extension_artifacts(options.extension, run_dir, store.iter_trajectories())
     store.export_columnar(store.iter_trajectories())
     protect_artifact_tree(run_dir)
     return run_dir
 
 
 def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
+    if not shard_dirs:
+        raise ValueError("at least one shard is required")
+    resolved_output = output_dir.resolve()
+    resolved_shards = [path.resolve() for path in shard_dirs]
+    if any(
+        resolved_output == shard
+        or resolved_output in shard.parents
+        or shard in resolved_output.parents
+        for shard in resolved_shards
+    ):
+        raise ValueError("merge output must not overlap an input shard")
+    if resolved_output.exists() and any(resolved_output.iterdir()):
+        raise ValueError("merge output directory must be empty")
     manifests = []
     trajectory_ids: set[str] = set()
     trajectory_hashes: dict[str, str] = {}
@@ -708,6 +839,7 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
         "profile",
         "scenario_pack_id",
         "scenario_pack_disclosure",
+        "schema_version",
     )
     if any(
         getattr(manifest, field) != getattr(base, field)
@@ -715,6 +847,12 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
         for field in provenance_fields
     ):
         raise ValueError("shards have incompatible provenance")
+    if any(
+        getattr(manifest, "extension_fingerprint", None)
+        != getattr(base, "extension_fingerprint", None)
+        for manifest in manifests[1:]
+    ):
+        raise ValueError("shards have incompatible extension provenance")
     merged = base.model_copy(
         update={
             "run_id": output_dir.name,
@@ -750,6 +888,11 @@ def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
         target_model=merged.model,
     )
     render_reports(output_dir, merged, report, store.iter_trajectories())
+    render_extension_artifacts(
+        getattr(merged, "extension_id", None),
+        output_dir,
+        store.iter_trajectories(),
+    )
     store.export_columnar(store.iter_trajectories())
     protect_artifact_tree(output_dir)
     return output_dir

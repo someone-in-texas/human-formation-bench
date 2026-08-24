@@ -1,5 +1,5 @@
 schema_version: "1.0"
-registry_version: "2026-07-25"
+registry_version: "2026-07-26"
 access_policy: Primary sources are preferred. Preprints are labeled. Conceptual anchors do not license direct psychological inference from model text.
 defaults: &defaults
   access_date: "2026-07-25"
@@ -340,6 +340,43 @@ sources:
     doi: null
     url: https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
     informs: [release_provenance, supply_chain_security]
+
+  - <<: *defaults
+    id: INZLICHT-EFFORT-2018
+    title: The Effort Paradox
+    authors: [Michael Inzlicht, Amitai Shenhav, Christopher Y. Olivola]
+    year: 2018
+    status: peer-reviewed journal article
+    doi: 10.1016/j.tics.2018.01.007
+    url: https://pubmed.ncbi.nlm.nih.gov/29477776/
+    informs: [gravity_formative_friction, effort_cost, effort_value]
+    limitations:
+      - Effort can be costly and valued; the review does not support treating difficulty as uniformly beneficial.
+      - The review does not validate HFB scenarios, Gravity signals, or inference from assistant text.
+  - <<: *defaults
+    id: SPARROW-GOOGLE-2011
+    title: Google Effects on Memory
+    authors: [Betsy Sparrow, Jenny Liu, Daniel M. Wegner]
+    year: 2011
+    status: peer-reviewed journal article
+    doi: 10.1126/science.1207745
+    url: https://pubmed.ncbi.nlm.nih.gov/21764755/
+    informs: [gravity_competence_transfer, externalized_memory]
+    limitations:
+      - The experiments concern computer availability and memory under specific conditions.
+      - They do not establish that search, delegation, assistive technology, or generative AI generally causes deskilling.
+  - <<: *defaults
+    id: GOLLWITZER-1999
+    title: Implementation Intentions
+    authors: [Peter M. Gollwitzer]
+    year: 1999
+    status: peer-reviewed journal article
+    doi: 10.1037/0003-066X.54.7.493
+    url: https://doi.org/10.1037/0003-066X.54.7.493
+    informs: [gravity_commitment_sovereignty, implementation_intentions]
+    limitations:
+      - Goal-support findings do not authorize coercive, irreversible, or assistant-controlled commitments.
+      - The article does not validate the Gravity state model or establish effects of AI commitment support.
 
   - <<: *defaults
     id: HFB-AUTHOR-001

@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from human_formation_benchmark.cli import app
 from human_formation_benchmark.config import load_scenarios
-from human_formation_benchmark.models import TrajectoryLength
+from human_formation_benchmark.models import ExtensionRunManifest, TrajectoryLength
 from human_formation_benchmark.runner import RunOptions, merge_shards, run_benchmark
 from human_formation_benchmark.storage import RunStore
 
@@ -41,11 +41,49 @@ async def test_fake_run_outputs_and_resume(tmp_path: Path) -> None:
     assert len(store.trajectories()) == 2
     manifest = store.load_manifest()
     assert manifest.status == "completed"
+    assert manifest.schema_version == "1.0"
+    raw_manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert "extension_id" not in raw_manifest
     assert manifest.spent_usd == 0
     before = (run_dir / "results.jsonl").read_text(encoding="utf-8")
     resumed = await run_benchmark(options, resume_dir=run_dir)
     assert resumed == run_dir
     assert (run_dir / "results.jsonl").read_text(encoding="utf-8") == before
+
+
+def test_git_provenance_is_independent_of_caller_working_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from human_formation_benchmark.runner import _git_commit
+
+    expected = _git_commit()
+    monkeypatch.chdir(tmp_path)
+    assert _git_commit() == expected
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_builtin_extension_run_records_v1_1_provenance(tmp_path: Path) -> None:
+    run_dir = await run_benchmark(
+        RunOptions(
+            extension="gravity",
+            profile="gravity_micro",
+            max_samples=1,
+            output_root=tmp_path / "runs",
+            cache_root=tmp_path / "cache",
+        )
+    )
+    manifest = RunStore(run_dir).load_manifest()
+    assert isinstance(manifest, ExtensionRunManifest)
+    assert manifest.schema_version == "1.1"
+    assert manifest.extension_id == "gravity"
+    assert manifest.extension_version == "0.1.0"
+    assert manifest.extension_fingerprint.startswith("sha256:")
+    assert manifest.scenario_pack_id == "hfb-extension-gravity"
+    assert not manifest.scenario_pack_canonical
+    resolved = json.loads((run_dir / "resolved-config.json").read_text(encoding="utf-8"))
+    assert resolved["extension"]["fingerprint"] == manifest.extension_fingerprint
+    assert resolved["options"]["extension"] == "gravity"
 
 
 @pytest.mark.integration
@@ -65,6 +103,37 @@ async def test_shards_merge_without_duplicates(tmp_path: Path) -> None:
     trajectories = RunStore(merged).trajectories()
     ids = [trajectory.id for trajectory in trajectories]
     assert len(ids) == len(set(ids)) == 4
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_shard_merge_rejects_overlapping_or_nonempty_output(tmp_path: Path) -> None:
+    shard_dirs = []
+    for index in range(2):
+        shard_dirs.append(
+            await run_benchmark(
+                RunOptions(
+                    max_samples=4,
+                    output_root=tmp_path / f"runs-overlap-{index}",
+                    cache_root=tmp_path / "cache",
+                    shards=2,
+                    shard_index=index,
+                )
+            )
+        )
+    original_results = (shard_dirs[0] / "results.jsonl").read_bytes()
+    for output_dir in (shard_dirs[0], shard_dirs[0] / "merged", tmp_path):
+        with pytest.raises(ValueError, match="overlap"):
+            merge_shards(output_dir, shard_dirs)
+    assert (shard_dirs[0] / "results.jsonl").read_bytes() == original_results
+
+    nonempty = tmp_path / "nonempty"
+    nonempty.mkdir()
+    sentinel = nonempty / "sentinel"
+    sentinel.write_text("preserve", encoding="utf-8")
+    with pytest.raises(ValueError, match="must be empty"):
+        merge_shards(nonempty, shard_dirs)
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
 
 
 @pytest.mark.integration
@@ -179,6 +248,32 @@ async def test_private_pack_is_hash_only_and_transcript_free(tmp_path: Path) -> 
         ["export", str(run_dir), "--destination", str(export_dir)],
     )
     assert result.exit_code == 0, result.output
+    missing_pack = CliRunner().invoke(app, ["resume", str(run_dir), "--json"])
+    assert missing_pack.exit_code == 1
+    assert "require --pack" in missing_pack.output
+    resumed = await run_benchmark(
+        RunOptions(
+            pack_path=pack,
+            max_samples=1,
+            output_root=run_dir.parent,
+            cache_root=tmp_path / "shared-cache-must-not-be-used",
+        ),
+        resume_dir=run_dir,
+    )
+    assert resumed == run_dir
+    changed_pack = yaml.safe_load(pack.read_text(encoding="utf-8"))
+    changed_pack["scenarios"][0]["user_opening"] += " changed"
+    pack.write_text(yaml.safe_dump(changed_pack), encoding="utf-8")
+    with pytest.raises(ValueError, match="pack hash does not match"):
+        await run_benchmark(
+            RunOptions(
+                pack_path=pack,
+                max_samples=1,
+                output_root=run_dir.parent,
+                cache_root=tmp_path / "shared-cache-must-not-be-used",
+            ),
+            resume_dir=run_dir,
+        )
     sentinels = (
         b"PRIVATE HELD OUT SENTINEL",
         b"private-pack-id-sentinel",
@@ -212,8 +307,8 @@ async def test_resume_fails_closed_when_policy_or_pack_changes(
         "human_formation_benchmark.runner", fromlist=["load_named_config"]
     ).load_named_config
 
-    def changed(kind: str, name: str) -> dict[str, object]:
-        item = original(kind, name)
+    def changed(kind: str, name: str, **kwargs: object) -> dict[str, object]:
+        item = original(kind, name, **kwargs)
         if kind == "policies":
             item["system_prompt"] = f"{item['system_prompt']} changed"
         return item
@@ -224,6 +319,66 @@ async def test_resume_fails_closed_when_policy_or_pack_changes(
     RunStore(run_dir).update_manifest(manifest)
     with pytest.raises(ValueError, match="input hash mismatch"):
         await run_benchmark(options, resume_dir=run_dir)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_resume_fails_closed_when_runtime_provenance_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    options = RunOptions(
+        max_samples=1,
+        output_root=tmp_path / "runs",
+        cache_root=tmp_path / "cache",
+    )
+    run_dir = await run_benchmark(options)
+    manifest = RunStore(run_dir).load_manifest()
+    manifest.status = "interrupted"
+    manifest.git_commit = "original-commit"
+    RunStore(run_dir).update_manifest(manifest)
+    monkeypatch.setattr("human_formation_benchmark.runner._git_commit", lambda: "changed-commit")
+    with pytest.raises(ValueError, match="runtime provenance mismatch"):
+        await run_benchmark(options, resume_dir=run_dir)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_research_control_requires_opt_in_before_provider_creation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_created = False
+
+    def provider_must_not_be_created(options: RunOptions) -> None:
+        nonlocal provider_created
+        provider_created = True
+        raise AssertionError("provider creation must happen after research-control authorization")
+
+    monkeypatch.setattr("human_formation_benchmark.runner._provider", provider_must_not_be_created)
+    with pytest.raises(ValueError, match="--allow-research-controls"):
+        await run_benchmark(
+            RunOptions(
+                extension="gravity",
+                profile="gravity_micro",
+                policies=["gravity_relationally_sticky_companion"],
+                max_samples=1,
+                output_root=tmp_path / "runs",
+            )
+        )
+    assert not provider_created
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_existing_core_research_control_remains_backward_compatible(tmp_path: Path) -> None:
+    run_dir = await run_benchmark(
+        RunOptions(
+            policies=["agreeable_sycophantic_control"],
+            max_samples=1,
+            output_root=tmp_path / "runs",
+        )
+    )
+    assert RunStore(run_dir).load_manifest().status == "completed"
 
 
 @pytest.mark.integration
@@ -262,6 +417,7 @@ async def test_declared_long_horizon_catches_delayed_sleeper(
             pack_path=pack,
             max_samples=1,
             budget_usd=5,
+            allow_research_controls=True,
             output_root=tmp_path / f"runs-{turns}",
         )
     )

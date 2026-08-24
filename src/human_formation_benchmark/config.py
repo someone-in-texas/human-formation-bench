@@ -11,6 +11,7 @@ from typing import Any, TypeVar
 import yaml
 from pydantic import BaseModel
 
+from .extensions.models import ResolvedExtension
 from .models import (
     AdversarialChallenge,
     Constitution,
@@ -81,33 +82,104 @@ def _load_models(items: list[dict[str, Any]], model: type[ModelT]) -> list[Model
     return [model.model_validate(item) for item in items]
 
 
-def load_profile(name: str, *, root: Path | None = None) -> RunProfile:
+def _extension_items(
+    extension: ResolvedExtension | None,
+    attribute: str,
+    payload_key: str,
+) -> list[dict[str, Any]]:
+    if extension is None:
+        return []
+    items: list[dict[str, Any]] = []
+    for path in getattr(extension, attribute):
+        payload = load_yaml(path)
+        if not isinstance(payload, Mapping) or not isinstance(payload.get(payload_key), list):
+            raise ValueError(f"{path} must contain a {payload_key!r} list")
+        items.extend(payload[payload_key])
+    return items
+
+
+def load_profile(
+    name: str,
+    *,
+    root: Path | None = None,
+    extension: ResolvedExtension | None = None,
+) -> RunProfile:
     base = root or resource_root()
-    path = safe_child_path(base, Path("configs/profiles") / f"{name}.yaml")
-    return RunProfile.model_validate(load_yaml(path))
+    matches: list[RunProfile] = []
+    for path in extension.profile_files if extension else []:
+        payload = load_yaml(path)
+        if isinstance(payload, Mapping) and isinstance(payload.get("profiles"), list):
+            matches.extend(
+                RunProfile.model_validate(item)
+                for item in payload["profiles"]
+                if item.get("id") == name
+            )
+        elif isinstance(payload, Mapping) and payload.get("id") == name:
+            matches.append(RunProfile.model_validate(payload))
+    core_path = safe_child_path(base, Path("configs/profiles") / f"{name}.yaml")
+    if core_path.is_file():
+        matches.append(RunProfile.model_validate(load_yaml(core_path)))
+    if not matches:
+        raise KeyError(f"unknown profile: {name}")
+    if len(matches) > 1:
+        raise ValueError(f"duplicate profile ID across core and extension assets: {name}")
+    return matches[0]
 
 
-def list_profiles(*, root: Path | None = None) -> list[RunProfile]:
+def list_profiles(
+    *,
+    root: Path | None = None,
+    extension: ResolvedExtension | None = None,
+) -> list[RunProfile]:
     base = root or resource_root()
     profile_dir = safe_child_path(base, "configs/profiles")
-    return [
+    profiles = [
         RunProfile.model_validate(load_yaml(path)) for path in sorted(profile_dir.glob("*.yaml"))
     ]
+    for path in extension.profile_files if extension else []:
+        payload = load_yaml(path)
+        if isinstance(payload, Mapping) and isinstance(payload.get("profiles"), list):
+            profiles.extend(_load_models(payload["profiles"], RunProfile))
+        else:
+            profiles.append(RunProfile.model_validate(payload))
+    ids = [profile.id for profile in profiles]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate profile ID across core and extension assets")
+    return profiles
 
 
-def load_scenarios(*, root: Path | None = None, pack_path: Path | None = None) -> list[Scenario]:
+def load_scenarios(
+    *,
+    root: Path | None = None,
+    pack_path: Path | None = None,
+    extension: ResolvedExtension | None = None,
+) -> list[Scenario]:
     if pack_path is not None:
         payload = load_yaml(pack_path.resolve())
         return _load_models(payload["scenarios"], Scenario)
+    if extension is not None and extension.scenario_files:
+        return _load_models(
+            _extension_items(extension, "scenario_files", "scenarios"),
+            Scenario,
+        )
     base = root or resource_root()
     payload = load_yaml(safe_child_path(base, "data/public_core/scenarios.yaml"))
     return _load_models(payload["scenarios"], Scenario)
 
 
-def load_rubrics(*, root: Path | None = None) -> list[Rubric]:
+def load_rubrics(
+    *,
+    root: Path | None = None,
+    extension: ResolvedExtension | None = None,
+) -> list[Rubric]:
     base = root or resource_root()
     payload = load_yaml(safe_child_path(base, "rubrics/core.yaml"))
-    return _load_models(payload["rubrics"], Rubric)
+    rubrics = _load_models(payload["rubrics"], Rubric)
+    rubrics.extend(_load_models(_extension_items(extension, "rubric_files", "rubrics"), Rubric))
+    ids = [rubric.id for rubric in rubrics]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate rubric ID across core and extension assets")
+    return rubrics
 
 
 def load_prices(*, root: Path | None = None) -> list[PriceEntry]:
@@ -116,7 +188,13 @@ def load_prices(*, root: Path | None = None) -> list[PriceEntry]:
     return _load_models(payload["prices"], PriceEntry)
 
 
-def load_named_config(kind: str, name: str, *, root: Path | None = None) -> dict[str, Any]:
+def load_named_config(
+    kind: str,
+    name: str,
+    *,
+    root: Path | None = None,
+    extension: ResolvedExtension | None = None,
+) -> dict[str, Any]:
     """Load a named policy, constitution, or judge configuration."""
 
     allowed = {
@@ -128,9 +206,19 @@ def load_named_config(kind: str, name: str, *, root: Path | None = None) -> dict
         raise ValueError(f"unsupported config kind: {kind}")
     base = root or resource_root()
     payload = load_yaml(safe_child_path(base, allowed[kind]))
-    for item in payload[kind]:
-        if item["id"] == name:
-            return dict(item)
+    matches = [dict(item) for item in payload[kind] if item["id"] == name]
+    if extension is not None and kind == "policies":
+        matches.extend(
+            dict(item)
+            for item in _extension_items(extension, "policy_files", "policies")
+            if item.get("id") == name
+        )
+    if len(matches) > 1:
+        raise ValueError(f"duplicate {kind[:-1]} ID across core and extension assets: {name}")
+    if matches:
+        if kind == "policies":
+            Policy.model_validate(matches[0])
+        return matches[0]
     raise KeyError(f"unknown {kind[:-1]}: {name}")
 
 
@@ -152,6 +240,23 @@ def load_lenses(*, root: Path | None = None) -> list[WorldviewLens]:
     return _load_models(payload["lenses"], WorldviewLens)
 
 
+def required_perspectives(*, root: Path | None = None) -> set[str]:
+    """Load the data-declared baseline perspectives for core validity fixtures."""
+
+    base = root or resource_root()
+    payload = load_yaml(safe_child_path(base, "configs/lenses/lenses.yaml"))
+    values = payload.get("required_perspectives")
+    if (
+        not isinstance(values, list)
+        or not values
+        or any(not isinstance(item, str) for item in values)
+    ):
+        raise ValueError("lens registry must declare required_perspectives")
+    if len(values) != len(set(values)):
+        raise ValueError("required_perspectives must be unique")
+    return set(values)
+
+
 def validate_foundations(*, root: Path | None = None) -> tuple[int, int]:
     base = root or resource_root()
     shared = load_yaml(safe_child_path(base, "configs/foundations/thin_floor.yaml"))
@@ -167,14 +272,7 @@ def validate_foundations(*, root: Path | None = None) -> tuple[int, int]:
         if set(constitution.thin_floor) != floor:
             raise ValueError(f"{constitution.id} has an unexplained thin-floor omission")
     lenses = load_lenses(root=base)
-    required = {
-        "christian",
-        "secular_pluralist",
-        "virtue_ethical",
-        "care_ethical",
-        "communal_duty",
-        "individual_self_direction",
-    }
+    required = required_perspectives(root=base)
     if {lens.perspective for lens in lenses} != required:
         raise ValueError("lens registry does not cover every required perspective")
     for lens in lenses:
@@ -207,14 +305,7 @@ def validate_challenge_coverage(*, root: Path | None = None) -> tuple[int, int]:
     from .scoring import detect_failure_gates, deterministic_score
 
     contrasts = load_perspective_contrasts(root=root)
-    required = {
-        "christian",
-        "secular_pluralist",
-        "virtue_ethical",
-        "care_ethical",
-        "communal_duty",
-        "individual_self_direction",
-    }
+    required = required_perspectives(root=root)
     observed = {(item.perspective, item.role) for item in contrasts}
     missing = {
         (perspective, role)

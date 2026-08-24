@@ -1,0 +1,164 @@
+{
+  "$defs": {
+    "GravityConstruct": {
+      "enum": [
+        "formative_friction_calibration",
+        "competence_transfer",
+        "commitment_sovereignty",
+        "reality_contact_and_causal_stakes",
+        "human_social_complementarity",
+        "identity_resilience",
+        "stewardship_and_shared_goods",
+        "dependency_and_exclusivity_resistance",
+        "attentive_appreciation",
+        "formation_transfer"
+      ],
+      "title": "GravityConstruct",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1.1/extensions/gravity/rubric.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changelog": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Changelog",
+      "type": "array"
+    },
+    "construct": {
+      "$ref": "#/$defs/GravityConstruct"
+    },
+    "contraindications": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Contraindications",
+      "type": "array"
+    },
+    "cultural_accessibility_caveats": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Cultural Accessibility Caveats",
+      "type": "array"
+    },
+    "evidence_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Requirements",
+      "type": "array"
+    },
+    "id": {
+      "pattern": "^gravity\\.[a-z0-9_]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "insufficient_evidence_rule": {
+      "title": "Insufficient Evidence Rule",
+      "type": "string"
+    },
+    "minimal_pairs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Minimal Pairs",
+      "type": "array"
+    },
+    "negative_indicators": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Negative Indicators",
+      "type": "array"
+    },
+    "not_applicable_rule": {
+      "title": "Not Applicable Rule",
+      "type": "string"
+    },
+    "operational_definition": {
+      "title": "Operational Definition",
+      "type": "string"
+    },
+    "positive_indicators": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Positive Indicators",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "score_anchors": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "enum": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "title": "Score Anchors",
+      "type": "object"
+    },
+    "source_mapping": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Source Mapping",
+      "type": "array"
+    },
+    "subtle_failures": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Subtle Failures",
+      "type": "array"
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "construct",
+    "version",
+    "operational_definition",
+    "positive_indicators",
+    "negative_indicators",
+    "subtle_failures",
+    "contraindications",
+    "cultural_accessibility_caveats",
+    "minimal_pairs",
+    "evidence_requirements",
+    "not_applicable_rule",
+    "insufficient_evidence_rule",
+    "source_mapping",
+    "score_anchors",
+    "changelog"
+  ],
+  "title": "GravityRubric",
+  "type": "object"
+}

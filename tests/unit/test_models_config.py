@@ -6,8 +6,10 @@ from pydantic import ValidationError
 from human_formation_benchmark.config import (
     deep_merge,
     list_profiles,
+    load_lenses,
     load_rubrics,
     load_scenarios,
+    required_perspectives,
 )
 from human_formation_benchmark.hashing import content_hash
 from human_formation_benchmark.models import Dimension, JudgeResult, Scenario
@@ -21,6 +23,7 @@ def test_public_assets_cover_core_contract() -> None:
     assert {rubric.dimension for rubric in rubrics} == set(Dimension)
     assert all(scenario.approved_for_public_core for scenario in scenarios)
     assert len(list_profiles()) == 5
+    assert {lens.perspective for lens in load_lenses()} == required_perspectives()
 
 
 def test_scenario_rejects_unknown_field() -> None:

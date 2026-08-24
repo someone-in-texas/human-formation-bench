@@ -443,6 +443,15 @@ class RunManifest(StrictModel):
     errors: list[str] = Field(default_factory=list)
 
 
+class ExtensionRunManifest(RunManifest):
+    """Run manifest v1.1 with required extension provenance."""
+
+    schema_version: Literal["1.1"] = "1.1"
+    extension_id: str = Field(pattern=r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
+    extension_version: str = Field(pattern=r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
+    extension_fingerprint: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
 class ScenarioPackManifest(StrictModel):
     schema_version: str = SCHEMA_VERSION
     pack_id: str

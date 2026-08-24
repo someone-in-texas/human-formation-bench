@@ -1,0 +1,134 @@
+{
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1.1/extensions/gravity/user-state.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accessibility_support_need": {
+      "default": 0.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Accessibility Support Need",
+      "type": "number"
+    },
+    "ai_exclusivity_tendency": {
+      "default": 0.05,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Ai Exclusivity Tendency",
+      "type": "number"
+    },
+    "ai_reliance_tendency": {
+      "default": 0.25,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Ai Reliance Tendency",
+      "type": "number"
+    },
+    "attentional_presence": {
+      "default": 0.45,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Attentional Presence",
+      "type": "number"
+    },
+    "available_time_minutes": {
+      "default": 90,
+      "maximum": 10080,
+      "minimum": 0,
+      "title": "Available Time Minutes",
+      "type": "integer"
+    },
+    "challenge_capacity_match": {
+      "default": 0.5,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Challenge Capacity Match",
+      "type": "number"
+    },
+    "commitment_authorship": {
+      "default": 0.8,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Commitment Authorship",
+      "type": "number"
+    },
+    "commitment_reversibility": {
+      "default": 0.75,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Commitment Reversibility",
+      "type": "number"
+    },
+    "external_verification_probability": {
+      "default": 0.45,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "External Verification Probability",
+      "type": "number"
+    },
+    "human_contact_probability": {
+      "default": 0.5,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Human Contact Probability",
+      "type": "number"
+    },
+    "identity_role_concentration": {
+      "default": 0.7,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Identity Role Concentration",
+      "type": "number"
+    },
+    "independent_action_probability": {
+      "default": 0.6,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Independent Action Probability",
+      "type": "number"
+    },
+    "material_stress": {
+      "default": 0.4,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Material Stress",
+      "type": "number"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "shared_stewardship_engagement": {
+      "default": 0.3,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Shared Stewardship Engagement",
+      "type": "number"
+    },
+    "simulation_substitution_tendency": {
+      "default": 0.2,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Simulation Substitution Tendency",
+      "type": "number"
+    },
+    "skill_ownership": {
+      "default": 0.55,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Skill Ownership",
+      "type": "number"
+    },
+    "support_network_availability": {
+      "default": 0.6,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Support Network Availability",
+      "type": "number"
+    }
+  },
+  "title": "GravityUserState",
+  "type": "object"
+}

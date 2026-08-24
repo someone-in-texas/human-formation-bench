@@ -1,0 +1,184 @@
+{
+  "$defs": {
+    "EvidenceSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "quote": {
+          "maxLength": 280,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "quote"
+      ],
+      "title": "EvidenceSpan",
+      "type": "object"
+    },
+    "GravityGates": {
+      "additionalProperties": false,
+      "properties": {
+        "accessibility_need_ignored": {
+          "default": false,
+          "title": "Accessibility Need Ignored",
+          "type": "boolean"
+        },
+        "assistant_as_unreviewable_governor": {
+          "default": false,
+          "title": "Assistant As Unreviewable Governor",
+          "type": "boolean"
+        },
+        "coercive_self_binding": {
+          "default": false,
+          "title": "Coercive Self Binding",
+          "type": "boolean"
+        },
+        "consent_bypass": {
+          "default": false,
+          "title": "Consent Bypass",
+          "type": "boolean"
+        },
+        "dependency_for_retention": {
+          "default": false,
+          "title": "Dependency For Retention",
+          "type": "boolean"
+        },
+        "emergency_delay_for_formation": {
+          "default": false,
+          "title": "Emergency Delay For Formation",
+          "type": "boolean"
+        },
+        "exclusivity_language": {
+          "default": false,
+          "title": "Exclusivity Language",
+          "type": "boolean"
+        },
+        "exit_guilt": {
+          "default": false,
+          "title": "Exit Guilt",
+          "type": "boolean"
+        },
+        "formation_paternalism": {
+          "default": false,
+          "title": "Formation Paternalism",
+          "type": "boolean"
+        },
+        "human_support_displacement": {
+          "default": false,
+          "title": "Human Support Displacement",
+          "type": "boolean"
+        },
+        "unsafe_commitment": {
+          "default": false,
+          "title": "Unsafe Commitment",
+          "type": "boolean"
+        }
+      },
+      "title": "GravityGates",
+      "type": "object"
+    },
+    "GravitySignal": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/EvidenceSpan"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "polarity": {
+          "enum": [
+            "supportive",
+            "risk",
+            "adjudication_required",
+            "context"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "precision": {
+          "const": "exact_pattern",
+          "title": "Precision",
+          "type": "string"
+        },
+        "rule_version": {
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "signal_id": {
+          "pattern": "^gravity\\.[a-z0-9_]+$",
+          "title": "Signal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "signal_id",
+        "polarity",
+        "precision",
+        "evidence",
+        "rule_version",
+        "note"
+      ],
+      "title": "GravitySignal",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1.1/extensions/gravity/signal-report.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detector_hits": {
+      "$ref": "#/$defs/GravityGates"
+    },
+    "detector_version": {
+      "title": "Detector Version",
+      "type": "string"
+    },
+    "interpretation": {
+      "const": "triage_only_not_a_semantic_or_psychometric_judgment",
+      "default": "triage_only_not_a_semantic_or_psychometric_judgment",
+      "title": "Interpretation",
+      "type": "string"
+    },
+    "ordinal_score": {
+      "const": null,
+      "default": null,
+      "title": "Ordinal Score",
+      "type": "null"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "signals": {
+      "items": {
+        "$ref": "#/$defs/GravitySignal"
+      },
+      "title": "Signals",
+      "type": "array"
+    }
+  },
+  "required": [
+    "detector_version",
+    "signals",
+    "detector_hits"
+  ],
+  "title": "SignalReport",
+  "type": "object"
+}

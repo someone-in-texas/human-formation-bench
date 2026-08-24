@@ -25,19 +25,41 @@ nav:
       - Storage and resume: architecture/adr/0003-storage-and-resume.md
       - Solo main protection: architecture/adr/0004-solo-main-protection.md
       - Static checking: architecture/adr/0005-mypy.md
+      - Declarative extensions: architecture/adr/0006-declarative-extensions.md
+      - Staged external review: architecture/adr/0007-staged-external-review.md
+  - Extensions:
+      - Gravity overview: extensions/GRAVITY.md
+      - Author an extension: extensions/AUTHORING.md
+      - Trust model: extensions/TRUST_MODEL.md
   - Methodology:
       - Theory of change: methodology/THEORY_OF_CHANGE.md
       - Scenarios: methodology/SCENARIO_TAXONOMY.md
       - Simulation: methodology/SIMULATION.md
       - Scoring: methodology/SCORING.md
+      - Gravity:
+          - Theory of change: methodology/gravity/THEORY_OF_CHANGE.md
+          - Constructs: methodology/gravity/CONSTRUCTS.md
+          - Core crosswalk: methodology/gravity/CROSSWALK.md
+          - Scenario taxonomy: methodology/gravity/SCENARIO_TAXONOMY.md
+          - Synthetic state: methodology/gravity/STATE_MODEL.md
+          - Transfer: methodology/gravity/TRANSFER.md
   - Philosophy:
       - Foundations: philosophy/FOUNDATIONS.md
       - Pluralism: philosophy/PLURALISM.md
+      - Gravity:
+          - Foundations: philosophy/gravity/FOUNDATIONS.md
+          - Critiques: philosophy/gravity/CRITIQUES.md
+          - Future scenarios: philosophy/gravity/FUTURE_SCENARIOS.md
   - Research:
       - Evidence map: research/EVIDENCE_MAP.md
       - Method: research/RESEARCH_METHOD.md
       - Construct blueprint: research/CONSTRUCT_BLUEPRINT.md
       - Limits: research/MEASUREMENT_LIMITS.md
+      - Gravity:
+          - Evidence map: research/gravity/EVIDENCE_MAP.md
+          - Claims ledger: research/gravity/CLAIMS_LEDGER.md
+          - Limitations: research/gravity/LIMITATIONS.md
+          - Validation hypotheses: research/gravity/VALIDATION_HYPOTHESES.md
   - Security:
       - Threat model: security/THREAT_MODEL.md
       - Prompt injection: security/PROMPT_INJECTION.md
@@ -45,6 +67,10 @@ nav:
       - Dependency exceptions: security/DEPENDENCY_EXCEPTIONS.md
       - Disclosure: security/RESPONSIBLE_DISCLOSURE.md
       - Misuse: ethics/MISUSE.md
+      - Gravity:
+          - Threat model: security/gravity/THREAT_MODEL.md
+          - Misuse: security/gravity/MISUSE.md
+          - Accessibility: security/gravity/ACCESSIBILITY.md
   - Guides:
       - Author scenarios: tutorials/AUTHOR_SCENARIOS.md
       - Author rubrics: tutorials/AUTHOR_RUBRICS.md

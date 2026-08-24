@@ -10,7 +10,8 @@ passed its stated automated check; it does not imply construct validity.
 - [x] All 16 dimensions have versioned rubrics and source mappings.
 - [x] Theory of change exists in Mermaid and machine-readable YAML.
 - [x] Measurement limits separate model behavior from real-user outcomes.
-- [ ] Independent methodology and philosophy reviewers approve the release commit.
+- [x] Independent internal methodology and philosophy review is recorded for the experimental alpha.
+- [ ] External methodology and philosophy reviewers approve before an ADR 0007 promotion trigger.
 
 ## Functional benchmark
 
@@ -32,7 +33,8 @@ passed its stated automated check; it does not imply construct validity.
 - [ ] Per-dimension positive/negative/subtle/ambiguous/paraphrase/minimal-pair coverage and rotating
   held-out validation are complete.
 - [x] GitHub Actions are least-privilege and pinned.
-- [x] CodeQL, dependency review, Scorecard, Dependabot, SBOM, and attestations are configured.
+- [x] CodeQL, dependency review, Scorecard, SBOM, and attestations are configured.
+- [x] Dependabot is intentionally paused; its reviewed configuration is retained for re-enablement.
 - [ ] GitHub-hosted checks pass on the release-candidate commit.
 - [ ] No unresolved Critical or High independent-review findings remain.
 
@@ -42,8 +44,32 @@ passed its stated automated check; it does not imply construct validity.
 - [x] Governance, conduct, security, citation, contribution, RFC, and change processes exist.
 - [x] Issue forms, PR template, CODEOWNERS, and release tooling exist.
 - [ ] Main ruleset is applied after required check names have completed at least once.
-- [ ] `v0.1.0-alpha.1` package and release artifacts pass the prerelease script.
-- [ ] GitHub prerelease is published and its wheel is verified in a clean environment.
+- [x] `v0.1.0-alpha.1` package and release artifacts passed the prerelease script.
+- [x] The `v0.1.0-alpha.1` GitHub prerelease was published and its wheel was verified.
+- [ ] The current release candidate passes the prerelease script and hosted checks.
 
 The unchecked human-validation and live-provider items are deliberate alpha limitations, not silent
 omissions. Release automation must fail while any required reviewer reports Critical or High findings.
+
+## Gravity experimental extension
+
+- [x] General built-in declarative extension seam, contained asset allowlist, and fingerprints exist.
+- [x] Gravity has strict typed envelopes, a small synthetic vertical slice, observable events,
+  policy-attributed detector hits, and explicit research-control opt-in.
+- [x] Rich Gravity assets, runner projections, packaged JSON Schemas, and runtime schema parity are
+  checked by `hfb validate --extension gravity`.
+- [ ] Gravity state transitions and transfer traces are integrated into actual benchmark runs.
+- [x] Gravity theory, philosophy, claims, source limits, security, misuse, and accessibility
+  documentation exists.
+- [ ] Calibrated Gravity model judges and human adjudication are implemented.
+- [ ] A large independently reviewed scenario pack exists.
+- [ ] Ordinal Gravity constructs have human-rater reliability and validity evidence.
+- [ ] Human-subject evidence supports any claim about durable human outcomes.
+- [ ] All thick worldview lenses have migrated through one reviewed extension contract.
+- [ ] Seven external Gravity specialist reviews approve before an ADR 0007 promotion trigger.
+
+Gravity's unchecked items are staged research, not implied capabilities. ADR 0007 permits the small
+experimental vertical slice to merge and prerelease after independent internal cross-cutting review,
+but it does not waive external review for stronger claims, larger packs, calibrated scoring, human
+research, or beta/stable promotion. Deterministic signals are triage evidence rather than construct
+scores.

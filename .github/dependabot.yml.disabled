@@ -1,0 +1,22 @@
+# Dependabot version-update configuration is intentionally disabled.
+#
+# To re-enable it, review dependency changes manually, rename this file to
+# `.github/dependabot.yml`, and restore automated security fixes in the GitHub
+# repository settings (or rerun `scripts/github_bootstrap.sh` with
+# `HFB_ENABLE_DEPENDABOT=1`). Keep dependency review, pip-audit, and pinned
+# Actions checks active while automation is paused.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+    labels: [dependencies, security]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, security]

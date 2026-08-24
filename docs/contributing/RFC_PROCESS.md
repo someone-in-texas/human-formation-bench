@@ -5,5 +5,7 @@ Open an issue labeled `research`, `philosophy`, or `breaking change`, then add
 argument, alternatives, worldview impact, security and privacy impact, compatibility, migration,
 validation plan, reviewers, dissent, and release effect.
 
-Normative changes need two relevant domain reviews. Maintainers record a decision and minority report.
-Emergency security changes may merge under embargo and complete the public record after disclosure.
+Normative changes need two relevant domain reviews. During the solo experimental alpha, independent
+internal reviews satisfy this merge gate under ADR 0007; external review is still required at its
+promotion and claim triggers. Maintainers record a decision and minority report. Emergency security
+changes may merge under embargo and complete the public record after disclosure.

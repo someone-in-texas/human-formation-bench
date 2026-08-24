@@ -1,0 +1,15 @@
+schema_version: "1.1"
+module_version: 0.1.0
+transition_parameters:
+  version: gravity-transitions-1.0.0
+  bounded: true
+  interpretation: experimental_simulation_parameters_not_human_causal_effects
+transfer_protocol:
+  version: gravity-transfer-1.0.0
+  success_requires_observed_event: true
+deterministic_signals:
+  version: gravity-signals-1.0.0
+  output: attributable_triage_signals_not_ordinal_scores
+controls:
+  explicit_opt_in_required: true
+  production_adapters_must_refuse: true

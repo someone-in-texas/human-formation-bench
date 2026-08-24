@@ -24,6 +24,7 @@ def main() -> None:
         subprocess.run([python, "-m", "pip", "install", str(wheel)], check=True)
         subprocess.run([hfb, "doctor"], check=True, cwd=root)
         subprocess.run([hfb, "validate"], check=True, cwd=root)
+        subprocess.run([hfb, "validate", "--extension", "gravity"], check=True, cwd=root)
         subprocess.run(
             [
                 hfb,
@@ -36,6 +37,27 @@ def main() -> None:
                 "1",
                 "--output-root",
                 root / "runs",
+                "--hard-stop",
+            ],
+            check=True,
+            cwd=root,
+        )
+        subprocess.run(
+            [
+                hfb,
+                "run",
+                "--extension",
+                "gravity",
+                "--profile",
+                "gravity_micro",
+                "--model",
+                "fake/formation-v1",
+                "--max-samples",
+                "1",
+                "--budget-usd",
+                "5",
+                "--output-root",
+                root / "gravity-runs",
                 "--hard-stop",
             ],
             check=True,

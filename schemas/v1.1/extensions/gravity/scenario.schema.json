@@ -1,0 +1,568 @@
+{
+  "$defs": {
+    "AssistanceMode": {
+      "enum": [
+        "direct_executor",
+        "teacher",
+        "coach",
+        "critic",
+        "facilitator",
+        "companion",
+        "governor"
+      ],
+      "title": "AssistanceMode",
+      "type": "string"
+    },
+    "Dimension": {
+      "enum": [
+        "truth_epistemic_integrity",
+        "intellectual_humility",
+        "agency_support",
+        "competence_retention",
+        "human_relatedness",
+        "dependency_boundary_quality",
+        "reality_contact",
+        "moral_responsibility",
+        "empathy_perspective_taking",
+        "consent_non_coercion",
+        "stewardship_non_domination",
+        "option_stewardship",
+        "human_standing_governance",
+        "pluralism_worldview_integrity",
+        "attention_wireheading_resistance",
+        "long_horizon_consistency"
+      ],
+      "title": "Dimension",
+      "type": "string"
+    },
+    "FrictionClass": {
+      "enum": [
+        "formative",
+        "instrumental_but_neutral",
+        "arbitrary",
+        "harmful_or_coercive",
+        "ambiguous"
+      ],
+      "title": "FrictionClass",
+      "type": "string"
+    },
+    "GoalMode": {
+      "enum": [
+        "completion",
+        "learning",
+        "expression",
+        "recovery",
+        "relationship",
+        "governance",
+        "decision_support",
+        "emotional_processing",
+        "appreciation"
+      ],
+      "title": "GoalMode",
+      "type": "string"
+    },
+    "GravityConstruct": {
+      "enum": [
+        "formative_friction_calibration",
+        "competence_transfer",
+        "commitment_sovereignty",
+        "reality_contact_and_causal_stakes",
+        "human_social_complementarity",
+        "identity_resilience",
+        "stewardship_and_shared_goods",
+        "dependency_and_exclusivity_resistance",
+        "attentive_appreciation",
+        "formation_transfer"
+      ],
+      "title": "GravityConstruct",
+      "type": "string"
+    },
+    "GravityScenarioPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "accessibility_factors": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Accessibility Factors",
+          "type": "array"
+        },
+        "appropriate_assistance_modes": {
+          "items": {
+            "$ref": "#/$defs/AssistanceMode"
+          },
+          "minItems": 1,
+          "title": "Appropriate Assistance Modes",
+          "type": "array"
+        },
+        "external_action_opportunity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Opportunity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "friction_classification": {
+          "$ref": "#/$defs/FrictionClass"
+        },
+        "human_handoff_opportunity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Opportunity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "module_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Module Version",
+          "type": "string"
+        },
+        "prohibited_shortcuts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Prohibited Shortcuts",
+          "type": "array"
+        },
+        "requested_assistance_mode": {
+          "$ref": "#/$defs/AssistanceMode"
+        },
+        "target_constructs": {
+          "items": {
+            "$ref": "#/$defs/GravityConstruct"
+          },
+          "minItems": 1,
+          "title": "Target Constructs",
+          "type": "array"
+        },
+        "transfer_tests": {
+          "items": {
+            "$ref": "#/$defs/TransferTest"
+          },
+          "title": "Transfer Tests",
+          "type": "array"
+        },
+        "urgency": {
+          "$ref": "#/$defs/Urgency"
+        },
+        "user_goal_mode": {
+          "$ref": "#/$defs/GoalMode"
+        }
+      },
+      "required": [
+        "user_goal_mode",
+        "requested_assistance_mode",
+        "appropriate_assistance_modes",
+        "friction_classification",
+        "urgency",
+        "target_constructs"
+      ],
+      "title": "GravityScenarioPayload",
+      "type": "object"
+    },
+    "GravityUserState": {
+      "additionalProperties": false,
+      "properties": {
+        "accessibility_support_need": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Accessibility Support Need",
+          "type": "number"
+        },
+        "ai_exclusivity_tendency": {
+          "default": 0.05,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Ai Exclusivity Tendency",
+          "type": "number"
+        },
+        "ai_reliance_tendency": {
+          "default": 0.25,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Ai Reliance Tendency",
+          "type": "number"
+        },
+        "attentional_presence": {
+          "default": 0.45,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Attentional Presence",
+          "type": "number"
+        },
+        "available_time_minutes": {
+          "default": 90,
+          "maximum": 10080,
+          "minimum": 0,
+          "title": "Available Time Minutes",
+          "type": "integer"
+        },
+        "challenge_capacity_match": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Challenge Capacity Match",
+          "type": "number"
+        },
+        "commitment_authorship": {
+          "default": 0.8,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Commitment Authorship",
+          "type": "number"
+        },
+        "commitment_reversibility": {
+          "default": 0.75,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Commitment Reversibility",
+          "type": "number"
+        },
+        "external_verification_probability": {
+          "default": 0.45,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "External Verification Probability",
+          "type": "number"
+        },
+        "human_contact_probability": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Human Contact Probability",
+          "type": "number"
+        },
+        "identity_role_concentration": {
+          "default": 0.7,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Identity Role Concentration",
+          "type": "number"
+        },
+        "independent_action_probability": {
+          "default": 0.6,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Independent Action Probability",
+          "type": "number"
+        },
+        "material_stress": {
+          "default": 0.4,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Material Stress",
+          "type": "number"
+        },
+        "schema_version": {
+          "const": "1.1",
+          "default": "1.1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "shared_stewardship_engagement": {
+          "default": 0.3,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Shared Stewardship Engagement",
+          "type": "number"
+        },
+        "simulation_substitution_tendency": {
+          "default": 0.2,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Simulation Substitution Tendency",
+          "type": "number"
+        },
+        "skill_ownership": {
+          "default": 0.55,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Skill Ownership",
+          "type": "number"
+        },
+        "support_network_availability": {
+          "default": 0.6,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Support Network Availability",
+          "type": "number"
+        }
+      },
+      "title": "GravityUserState",
+      "type": "object"
+    },
+    "ObservableEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 1000,
+          "minLength": 5,
+          "title": "Description",
+          "type": "string"
+        },
+        "event_type": {
+          "enum": [
+            "assistant_behavior",
+            "user_action",
+            "external_feedback",
+            "model_outage",
+            "human_opportunity",
+            "transfer_task"
+          ],
+          "title": "Event Type",
+          "type": "string"
+        },
+        "observed": {
+          "default": true,
+          "title": "Observed",
+          "type": "boolean"
+        },
+        "provenance": {
+          "enum": [
+            "fixture",
+            "deterministic_rule",
+            "simulator",
+            "human_review"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "session": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Session",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "session",
+        "event_type",
+        "description",
+        "provenance"
+      ],
+      "title": "ObservableEvent",
+      "type": "object"
+    },
+    "Opportunity": {
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "default": true,
+          "title": "Available",
+          "type": "boolean"
+        },
+        "session": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Session",
+          "type": "integer"
+        },
+        "type": {
+          "maxLength": 80,
+          "minLength": 2,
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "session"
+      ],
+      "title": "Opportunity",
+      "type": "object"
+    },
+    "TransferTest": {
+      "enum": [
+        "ai_withdrawal",
+        "novel_task",
+        "human_handoff",
+        "model_switch",
+        "adversarial_attachment"
+      ],
+      "title": "TransferTest",
+      "type": "string"
+    },
+    "Urgency": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "emergency"
+      ],
+      "title": "Urgency",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/someone-in-texas/human-formation-bench/main/schemas/v1.1/extensions/gravity/scenario.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "core_dimensions": {
+      "items": {
+        "$ref": "#/$defs/Dimension"
+      },
+      "minItems": 1,
+      "title": "Core Dimensions",
+      "type": "array"
+    },
+    "domain": {
+      "maxLength": 80,
+      "minLength": 2,
+      "title": "Domain",
+      "type": "string"
+    },
+    "external_events": {
+      "items": {
+        "$ref": "#/$defs/ObservableEvent"
+      },
+      "title": "External Events",
+      "type": "array"
+    },
+    "failure_modes": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Failure Modes",
+      "type": "array"
+    },
+    "gravity": {
+      "$ref": "#/$defs/GravityScenarioPayload"
+    },
+    "id": {
+      "pattern": "^gravity\\.[a-z0-9][a-z0-9.-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "initial_state": {
+      "$ref": "#/$defs/GravityUserState"
+    },
+    "license_review": {
+      "minLength": 5,
+      "title": "License Review",
+      "type": "string"
+    },
+    "positive_indicators": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Positive Indicators",
+      "type": "array"
+    },
+    "review_scope": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Review Scope",
+      "type": "array"
+    },
+    "review_status": {
+      "enum": [
+        "author_draft",
+        "internal_multi_agent_reviewed",
+        "independent_reviewed",
+        "community_reviewed"
+      ],
+      "title": "Review Status",
+      "type": "string"
+    },
+    "reviewer_provenance": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Reviewer Provenance",
+      "type": "array"
+    },
+    "reviewer_type": {
+      "enum": [
+        "author",
+        "internal_agent",
+        "external_expert",
+        "affected_community"
+      ],
+      "title": "Reviewer Type",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sensitive_domain": {
+      "default": false,
+      "title": "Sensitive Domain",
+      "type": "boolean"
+    },
+    "source_provenance": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Source Provenance",
+      "type": "array"
+    },
+    "stakes": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Stakes",
+      "type": "string"
+    },
+    "synthetic": {
+      "const": true,
+      "default": true,
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "title": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Title",
+      "type": "string"
+    },
+    "user_opening": {
+      "maxLength": 10000,
+      "minLength": 10,
+      "title": "User Opening",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "review_status",
+    "review_scope",
+    "reviewer_type",
+    "reviewer_provenance",
+    "domain",
+    "stakes",
+    "user_opening",
+    "initial_state",
+    "gravity",
+    "core_dimensions",
+    "positive_indicators",
+    "failure_modes",
+    "source_provenance",
+    "license_review"
+  ],
+  "title": "GravityScenario",
+  "type": "object"
+}

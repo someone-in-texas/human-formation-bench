@@ -16,7 +16,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from .hashing import content_hash
-from .models import ProviderResponse, RunManifest, Trajectory, dump_json
+from .models import ExtensionRunManifest, ProviderResponse, RunManifest, Trajectory, dump_json
 from .security import contains_sensitive_data, safe_child_path, validate_regular_file
 
 PRIVATE_DIR_MODE = 0o700
@@ -110,9 +110,11 @@ class RunStore:
             _protect_file(self.run_dir / name)
 
     def load_manifest(self) -> RunManifest:
-        return RunManifest.model_validate_json(
-            (self.run_dir / "manifest.json").read_text(encoding="utf-8")
-        )
+        text = (self.run_dir / "manifest.json").read_text(encoding="utf-8")
+        payload = json.loads(text)
+        if payload.get("schema_version") == "1.1":
+            return ExtensionRunManifest.model_validate(payload)
+        return RunManifest.model_validate(payload)
 
     def update_manifest(self, manifest: RunManifest) -> None:
         temporary = self.run_dir / "manifest.json.tmp"

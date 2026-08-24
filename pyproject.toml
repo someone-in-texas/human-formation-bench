@@ -76,7 +76,13 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-human_formation_benchmark = ["resources/**/*.yaml", "resources/**/*.json", "resources/**/*.j2"]
+human_formation_benchmark = [
+  "resources/**/*.yaml",
+  "resources/**/*.json",
+  "resources/**/*.j2",
+  "extensions/gravity/resources/*.yaml",
+  "extensions/gravity/schemas/*.json",
+]
 
 [tool.setuptools.data-files]
 "share/human-formation-benchmark/configs/profiles" = [
