@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -24,6 +25,10 @@ REENABLE_TRIGGERS = {
     "second_active_maintainer_and_review_panel",
 }
 INTERNAL_REVIEW_SCOPES = {"technical", "governance", "release"}
+REVIEW_EVIDENCE_PATHS = {
+    "reviews/REVIEW_SUMMARY.md",
+    "reviews/release-candidate.yaml",
+}
 
 
 def run(command: list[str], *, cwd: Path) -> None:
@@ -89,28 +94,38 @@ def load_review_policy(root: Path) -> dict[str, Any]:
     return payload
 
 
-def permitted_review_commits(root: Path) -> set[str]:
-    head = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
-    ).stdout.strip()
-    permitted = {head}
-    parent = subprocess.run(
-        ["git", "rev-parse", "HEAD^"], cwd=root, check=False, capture_output=True, text=True
-    ).stdout.strip()
-    if parent:
-        changed = subprocess.run(
-            ["git", "diff", "--name-only", parent, head],
-            cwd=root,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.splitlines()
-        if changed and all(path.startswith("reviews/") for path in changed):
-            permitted.add(parent)
-    return permitted
+def _is_review_evidence(path: str) -> bool:
+    return path in REVIEW_EVIDENCE_PATHS or (
+        path.startswith("reviews/") and path.endswith("/final.yaml")
+    )
 
 
-def verify_reviews(root: Path, *, allowed_commits: set[str] | None = None) -> None:
+def release_content_hash(root: Path) -> str:
+    """Hash tracked release content while excluding review evidence that attests to it."""
+
+    index = subprocess.run(
+        ["git", "ls-files", "--stage", "-z"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    ).stdout
+    digest = hashlib.sha256()
+    for raw_entry in index.split(b"\0"):
+        if not raw_entry:
+            continue
+        try:
+            _, raw_path = raw_entry.split(b"\t", 1)
+            path = raw_path.decode("utf-8")
+        except (UnicodeDecodeError, ValueError) as error:
+            raise SystemExit("unable to parse tracked release content") from error
+        if _is_review_evidence(path):
+            continue
+        digest.update(raw_entry)
+        digest.update(b"\0")
+    return f"sha256:{digest.hexdigest()}"
+
+
+def verify_reviews(root: Path, *, expected_content_hash: str | None = None) -> None:
     policy = load_review_policy(root)
     approved = _string_set(policy, "approved_verdicts")
     blocking_severities = _string_set(policy, "blocking_severities")
@@ -122,8 +137,8 @@ def verify_reviews(root: Path, *, allowed_commits: set[str] | None = None) -> No
     required_marker = external.get("required_marker", "external")
     if external_required and not isinstance(required_marker, str):
         raise SystemExit("review policy external required_marker must be a string")
-    if external_required and allowed_commits is None:
-        allowed_commits = permitted_review_commits(root)
+    if external_required and expected_content_hash is None:
+        expected_content_hash = release_content_hash(root)
     roles = set()
     blockers = []
     for path in sorted((root / "reviews").glob("*/final.yaml")):
@@ -153,8 +168,12 @@ def verify_reviews(root: Path, *, allowed_commits: set[str] | None = None) -> No
         if external_required:
             if payload.get("verification") != required_marker:
                 blockers.append(f"{path}: external verification marker missing")
-            if payload.get("reviewed_commit") not in allowed_commits:
-                blockers.append(f"{path}: review is not bound to the release candidate")
+            if payload.get("reviewed_content_hash") != expected_content_hash:
+                blockers.append(f"{path}: review is not bound to the release content")
+            if not isinstance(payload.get("reviewed_commit"), str) or not re.fullmatch(
+                r"[0-9a-f]{40}", payload["reviewed_commit"]
+            ):
+                blockers.append(f"{path}: reviewed_commit must be a full Git commit")
             required_provenance = {
                 "reviewer_identity": str,
                 "affiliation": str,
@@ -202,8 +221,11 @@ def verify_release_candidate_review(root: Path, tag: str) -> None:
     if payload.get("stage") != policy["stage"]:
         blockers.append(f"stage must equal {policy['stage']}")
     reviewed_commit = payload.get("reviewed_commit")
-    if reviewed_commit not in permitted_review_commits(root):
-        blockers.append("reviewed_commit is not bound to the release candidate")
+    if not isinstance(reviewed_commit, str) or not re.fullmatch(r"[0-9a-f]{40}", reviewed_commit):
+        blockers.append("reviewed_commit must be a full Git commit for traceability")
+    reviewed_content_hash = payload.get("reviewed_content_hash")
+    if reviewed_content_hash != release_content_hash(root):
+        blockers.append("reviewed_content_hash is not bound to the release content")
     if payload.get("verdict") not in _string_set(policy, "approved_verdicts"):
         blockers.append(f"verdict {payload.get('verdict')}")
     scopes = payload.get("scopes")
@@ -224,8 +246,16 @@ def verify_release_candidate_review(root: Path, tag: str) -> None:
         elif finding.get("severity") in blocking_severities:
             blockers.append(f"unresolved {finding.get('id', 'unknown')} {finding.get('severity')}")
     summary = (root / "reviews" / "REVIEW_SUMMARY.md").read_text(encoding="utf-8")
-    if tag not in summary or not isinstance(reviewed_commit, str) or reviewed_commit not in summary:
-        blockers.append("REVIEW_SUMMARY.md must name the release tag and reviewed commit")
+    if (
+        tag not in summary
+        or not isinstance(reviewed_commit, str)
+        or reviewed_commit not in summary
+        or not isinstance(reviewed_content_hash, str)
+        or reviewed_content_hash not in summary
+    ):
+        blockers.append(
+            "REVIEW_SUMMARY.md must name the release tag, reviewed commit, and content hash"
+        )
     if blockers:
         raise SystemExit("release-candidate review gate failed:\n- " + "\n- ".join(blockers))
 

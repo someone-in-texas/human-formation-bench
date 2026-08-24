@@ -25,9 +25,11 @@ advisory rather than a merge or prerelease gate. Alpha changes still require:
 - no claim that internal multi-agent review is external validation.
 
 The machine-readable policy retains an `external_verification` switch. Setting `required: true` makes
-the prerelease gate require all seven external specialist roles, externally marked review artifacts,
-and candidate-commit binding (or its direct parent when the final commit contains review artifacts
-only). The policy review date also fails closed so the temporary stage cannot continue silently.
+the prerelease gate require all seven external specialist roles, attributable externally marked review
+artifacts, and a deterministic hash of the tracked release content. The hash excludes only review
+evidence files, so it survives squash/rebase merges while changes to code, policy, documentation, or
+configuration invalidate the review. The policy review date also fails closed so the temporary stage
+cannot continue silently.
 
 External specialist approval becomes release-blocking before any of these triggers:
 
