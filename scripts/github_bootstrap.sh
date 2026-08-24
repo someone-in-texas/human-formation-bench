@@ -30,11 +30,17 @@ gh api --method PUT -H "Accept: application/vnd.github+json" "/repos/$FULL_REPO/
   -f names[]='open-source' \
   -f names[]='benchmark' >/dev/null
 
-for endpoint in vulnerability-alerts automated-security-fixes private-vulnerability-reporting; do
+for endpoint in vulnerability-alerts private-vulnerability-reporting; do
   if ! gh api --method PUT "/repos/$FULL_REPO/$endpoint" >/dev/null 2>&1; then
     printf 'Warning: GitHub rejected %s; inspect plan or feature availability.\n' "$endpoint" >&2
   fi
 done
+
+if [[ "${HFB_ENABLE_DEPENDABOT:-0}" == "1" ]]; then
+  gh api --method PUT "/repos/$FULL_REPO/automated-security-fixes" >/dev/null
+else
+  gh api --method DELETE "/repos/$FULL_REPO/automated-security-fixes" >/dev/null 2>&1 || true
+fi
 
 labels=(
   "bug:d73a4a"

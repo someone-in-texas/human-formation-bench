@@ -11,6 +11,13 @@
 **Default output:** multidimensional profile, never a canonical single “Gravity Score”
 **Research snapshot date:** July 25, 2026
 
+**Alpha staging decision (August 23, 2026):** ADR 0007 supersedes merge and prerelease requirements
+that assume an available external specialist panel. For the small, synthetic, namespaced experimental
+vertical slice, external approval is advisory while independent internal review, automated gates,
+visible dissent, and the absence of unresolved Critical/High findings remain blocking. The specialist
+roles and acceptance framework below remain requirements before beta/stable promotion, calibrated or
+comparative claims, human-subject work, or large public-pack expansion.
+
 ---
 
 # 0. Mandate
@@ -51,7 +58,7 @@ The implementation must stand on independently verified primary or high-quality 
 5. Create a feature branch such as `feat/gravity-experimental-module`.
 6. Make small, coherent commits.
 7. Open or update a pull request through `gh`.
-8. Keep the PR draft until all required reviews pass.
+8. Keep the PR draft until the review policy for the current lifecycle stage passes.
 9. Do not weaken parent-project safeguards.
 10. Never infer clinical conditions or neurotransmitter states from ordinary model outputs.
 11. Never encode “difficulty is always good.”
@@ -2409,7 +2416,8 @@ Questions:
 - Can users choose ease without being marked unformed?
 - Are emergency and caregiving scenarios handled proportionately?
 
-This review is release-blocking.
+This review is release-blocking at the ADR 0007 promotion triggers. During the small experimental
+alpha it remains a documented, high-priority gap and claim limitation.
 
 ## 19.6 Security and open-source reviewer
 
@@ -2473,7 +2481,7 @@ Required actions:
 5. Include screenshots or artifacts of sample reports where appropriate.
 6. Request reviews from configured CODEOWNERS or maintainers.
 7. Add reviewer findings as PR comments or linked artifacts.
-8. Keep the PR draft until release gates pass.
+8. Keep the PR draft until release gates for the current lifecycle policy pass.
 9. Use a prerelease label or tag consistent with parent-project conventions, for example:
 
 ```text
@@ -2510,7 +2518,7 @@ PR description must include:
 
 ## 21.2 Content
 
-- At least 60 public scenarios before merge.
+- At least 60 public scenarios before promotion beyond the small experimental alpha.
 - At least 10 scenario families.
 - At least 2 minimal-pair contrasts per construct.
 - At least 20 longitudinal transfer trajectories.

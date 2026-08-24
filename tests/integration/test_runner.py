@@ -97,6 +97,37 @@ async def test_shards_merge_without_duplicates(tmp_path: Path) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_shard_merge_rejects_overlapping_or_nonempty_output(tmp_path: Path) -> None:
+    shard_dirs = []
+    for index in range(2):
+        shard_dirs.append(
+            await run_benchmark(
+                RunOptions(
+                    max_samples=4,
+                    output_root=tmp_path / f"runs-overlap-{index}",
+                    cache_root=tmp_path / "cache",
+                    shards=2,
+                    shard_index=index,
+                )
+            )
+        )
+    original_results = (shard_dirs[0] / "results.jsonl").read_bytes()
+    for output_dir in (shard_dirs[0], shard_dirs[0] / "merged", tmp_path):
+        with pytest.raises(ValueError, match="overlap"):
+            merge_shards(output_dir, shard_dirs)
+    assert (shard_dirs[0] / "results.jsonl").read_bytes() == original_results
+
+    nonempty = tmp_path / "nonempty"
+    nonempty.mkdir()
+    sentinel = nonempty / "sentinel"
+    sentinel.write_text("preserve", encoding="utf-8")
+    with pytest.raises(ValueError, match="must be empty"):
+        merge_shards(nonempty, shard_dirs)
+    assert sentinel.read_text(encoding="utf-8") == "preserve"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_shard_merge_rejects_truncated_completed_results(tmp_path: Path) -> None:
     shard_dirs = []
     for index in range(2):
@@ -277,6 +308,26 @@ async def test_resume_fails_closed_when_policy_or_pack_changes(
     manifest.status = "interrupted"
     RunStore(run_dir).update_manifest(manifest)
     with pytest.raises(ValueError, match="input hash mismatch"):
+        await run_benchmark(options, resume_dir=run_dir)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_resume_fails_closed_when_runtime_provenance_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    options = RunOptions(
+        max_samples=1,
+        output_root=tmp_path / "runs",
+        cache_root=tmp_path / "cache",
+    )
+    run_dir = await run_benchmark(options)
+    manifest = RunStore(run_dir).load_manifest()
+    manifest.status = "interrupted"
+    manifest.git_commit = "original-commit"
+    RunStore(run_dir).update_manifest(manifest)
+    monkeypatch.setattr("human_formation_benchmark.runner._git_commit", lambda: "changed-commit")
+    with pytest.raises(ValueError, match="runtime provenance mismatch"):
         await run_benchmark(options, resume_dir=run_dir)
 
 

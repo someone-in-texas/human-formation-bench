@@ -591,6 +591,15 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
                 raise ValueError("private resume pack hash does not match the original run")
         if manifest.status == "completed":
             return run_dir
+        current_git_commit = _git_commit()
+        if (
+            manifest.git_commit != "unknown"
+            and current_git_commit != "unknown"
+            and manifest.git_commit != current_git_commit
+        ):
+            raise ValueError("resume runtime provenance mismatch: git commit changed")
+        if manifest.package_version != __version__:
+            raise ValueError("resume runtime provenance mismatch: package version changed")
         if manifest.model != options.model or manifest.profile != options.profile:
             raise ValueError("resume options do not match the original run")
         if getattr(manifest, "extension_id", None) != options.extension:
@@ -778,6 +787,19 @@ async def run_benchmark(options: RunOptions, *, resume_dir: Path | None = None) 
 
 
 def merge_shards(output_dir: Path, shard_dirs: list[Path]) -> Path:
+    if not shard_dirs:
+        raise ValueError("at least one shard is required")
+    resolved_output = output_dir.resolve()
+    resolved_shards = [path.resolve() for path in shard_dirs]
+    if any(
+        resolved_output == shard
+        or resolved_output in shard.parents
+        or shard in resolved_output.parents
+        for shard in resolved_shards
+    ):
+        raise ValueError("merge output must not overlap an input shard")
+    if resolved_output.exists() and any(resolved_output.iterdir()):
+        raise ValueError("merge output directory must be empty")
     manifests = []
     trajectory_ids: set[str] = set()
     trajectory_hashes: dict[str, str] = {}

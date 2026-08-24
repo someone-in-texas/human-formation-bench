@@ -3,9 +3,9 @@
 Date: 2026-07-26
 
 This record preserves the independent internal review cycle requested for the Gravity
-proto-extension. It is not a substitute for the seven specialist approvals required by
-`gravity-spec.md`, external expert review, disability-community review, psychometric validation, or
-human-subject review.
+proto-extension. It is not a substitute for the seven specialist approvals retained by
+`gravity-spec.md` for ADR 0007 promotion triggers, external expert review, disability-community
+review, psychometric validation, or human-subject review.
 
 ## Reviewers and initial verdicts
 
@@ -38,8 +38,9 @@ Material dissent and staged-work findings were also preserved:
 - Rubric source mappings and prose minimal pairs need stronger machine-resolvable fixtures.
 - The authored scenario set has internal multi-agent review only; it has not received the external,
   accessibility/care, psychometric, or affected-community review required for release claims.
-- The required seven exact-commit specialist reviews remain absent, so this work must remain a draft
-  prerelease candidate even when automated gates pass.
+- The required seven exact-commit specialist reviews remain absent. Under the policy in force on
+  2026-07-26, this kept the work a draft prerelease candidate even when automated gates passed. ADR
+  0007 later narrowed that block to its promotion and stronger-claim triggers.
 
 ## Remediation
 
@@ -86,7 +87,8 @@ green; it is not external specialist approval.
 
 ## Release disposition
 
-Do not merge or tag solely on the basis of this internal review. A release candidate remains blocked
-until the specialist roles required by `gravity-spec.md` review the exact candidate commit and all
-Critical and High findings are resolved. Automated tests establish implementation consistency, not
-construct validity.
+Do not claim external validation or construct validity on the basis of this internal review. ADR 0007
+now permits the small experimental alpha to merge and prerelease when automated checks pass, a current
+independent internal review is recorded, and no Critical or High findings remain. The dissent is
+preserved: disability/care and the other specialist roles in `gravity-spec.md` remain blocking before
+public-pack expansion, calibrated or comparative claims, human research, or beta/stable promotion.

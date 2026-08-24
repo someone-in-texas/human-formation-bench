@@ -5,6 +5,8 @@ rubrics also carry their own versions.
 
 ## [Unreleased]
 
+## [0.2.0-alpha.1] - 2026-08-23
+
 ### Added
 
 - Vector-first 16-dimension formation rubric and 24-scenario public alpha pack.
@@ -29,6 +31,19 @@ rubrics also carry their own versions.
 
 - Corrected the automation-bias seed citation DOI from the unrelated `bmjqs` prefix to
   `10.1136/amiajnl-2011-000089`.
+- Closed release-integrity gaps by binding optional external review to candidate commits, rejecting
+  destructive shard-merge destinations, and rejecting interrupted resumes across runtime versions.
+- Removed the expired Click audit exception by upgrading Inspect AI and Click, upgraded the remaining
+  vulnerable build dependency, and moved pinned GitHub Actions to Node 24-native releases.
+
+### Governance
+
+- External specialist approval is advisory for the small solo-maintainer experimental alpha under
+  ADR 0007, while automated gates, independent internal review, dissent, and Critical/High findings
+  remain blocking. The external gate remains fail-closed and is required at stronger lifecycle,
+  scoring, claim, pack, and human-research triggers.
+- Dependabot update PRs are paused; dependency review, unfiltered audit, CodeQL, Scorecard, and pinned
+  Actions remain enabled, and the reviewed configuration is retained for re-enablement.
 
 ## [0.1.0-alpha.1] - 2026-07-25
 

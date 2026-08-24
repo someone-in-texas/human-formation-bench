@@ -26,6 +26,7 @@ nav:
       - Solo main protection: architecture/adr/0004-solo-main-protection.md
       - Static checking: architecture/adr/0005-mypy.md
       - Declarative extensions: architecture/adr/0006-declarative-extensions.md
+      - Staged external review: architecture/adr/0007-staged-external-review.md
   - Extensions:
       - Gravity overview: extensions/GRAVITY.md
       - Author an extension: extensions/AUTHORING.md
