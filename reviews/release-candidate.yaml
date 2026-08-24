@@ -1,0 +1,30 @@
+schema_version: 1
+release_tag: v0.2.0-alpha.1
+stage: internal_alpha
+reviewed_commit: 37ab7d75fb7ca5c8c13a9e341deee5b76d0e4e85
+reviewed_content_hash: sha256:8ff2e9d357d642fe5534599d4a963489ed49d3ed4a6c01a6940e5d3f6ed37fda
+verdict: approve_with_non_blocking_reservations
+scopes:
+  - technical
+  - governance
+  - release
+reviewers:
+  - scope: technical
+    kind: independent_internal_subagent
+    verdict: approve_with_non_blocking_reservations
+  - scope: governance
+    kind: independent_internal_subagent
+    verdict: approve_with_non_blocking_reservations
+  - scope: release
+    kind: independent_internal_subagent
+    verdict: approve_with_non_blocking_reservations
+findings: []
+reservations:
+  - Internal multi-agent review is not external expert or affected-community validation.
+  - Disability, accessibility, and care expertise is the priority external-review gap.
+  - Gravity is a small English-language synthetic vertical slice without validity claims.
+  - Lexical signals are narrow and gameable and require human adjudication.
+  - Synthetic state and transfer scaffolds are not evidence of effects on people.
+  - Normative disagreements remain visible and no universal composite is implied.
+  - Dependabot automation is paused while other dependency and security gates stay active.
+  - Review provenance is asserted rather than cryptographically authenticated.
